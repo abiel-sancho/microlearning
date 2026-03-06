@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:testeapp/disciplinas.dart';
 import 'package:testeapp/registrar.dart';
 
+
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -9,13 +10,14 @@ class Login extends StatefulWidget {
   State<Login> createState() => _LoginState();
 }
 
+
 class _LoginState extends State<Login> {
 
   final TextEditingController controllerUsuario = TextEditingController();
   final TextEditingController controllerSenha = TextEditingController();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
 
     String usuariocerto = 'abiel';
     String senhacerta = '123';
@@ -25,11 +27,12 @@ class _LoginState extends State<Login> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text('Login'),
       ),
-      body: Center(
+      body: //StreamBuilder<List<Map<String, Dynamic>>>(stream: _someThing, builder: builder)
+      Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text('Usuário:'),
+            Text('Usuário'),
             SizedBox(width: 200, child: TextField(controller: controllerUsuario,)),
             SizedBox(height: 30),
 
