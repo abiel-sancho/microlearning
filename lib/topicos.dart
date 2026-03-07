@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 //import 'package:testeapp/resumo.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:testeapp/resumo.dart';
 
 
 class Topicos extends StatefulWidget {
@@ -46,19 +47,24 @@ class _TopicosState extends State<Topicos> {
                 itemCount: topico.length,
                 itemBuilder: (context, index) {
                   return 
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white, 
-                        boxShadow: [BoxShadow(color: Colors.black, blurRadius: 2.0)],
+                    GestureDetector(
+                      onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => Resumo(idTopico: topico[index]['id'].toString())));
+                    },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white, 
+                          boxShadow: [BoxShadow(color: Colors.black, blurRadius: 2.0)],
+                          ),
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(child: Text(topico[index]['nome'], textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)),
+                          ],
                         ),
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(child: Text(topico[index]['nome'], textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)),
-                        ],
                       ),
                     );
                 },
