@@ -1,46 +1,73 @@
 import 'package:flutter/material.dart';
-import 'package:testeapp/resumo.dart';
-//mport 'package:testeapp/disciplinas.dart';
+//import 'package:testeapp/resumo.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 
-class Topicos extends StatelessWidget {
-  const Topicos ({super.key});
+class Topicos extends StatefulWidget {
+  const Topicos ({super.key, required this.idDisciplina});
+
+  final String idDisciplina;
 
   @override
 
-  Widget build(BuildContext context) {
+  State<Topicos> createState() => _TopicosState();
+}
+
+class _TopicosState extends State<Topicos> {
+
+  late final _topicoStream = Supabase.instance.client
+      .from('topico')
+      .stream(primaryKey: ['id'])
+      .eq('id_disciplina', widget.idDisciplina);
+
+  @override
+
+    Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {Navigator.pop(context);}, 
-          icon: Icon(Icons.arrow_back)),
-          title: Text('História'),
-          ),
-      
-      body: Center(
-        child: ListView(
-          children: [
-            ListTile(title: Text('Império Romano'),
-            subtitle: Text('algo sobre o império romano e tal'), 
-            leading: Icon(Icons.sunny),
-            onTap:() {Navigator.push(context, MaterialPageRoute(builder: (context) => Resumo()));},
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _topicoStream,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final topico = snapshot.data!;
+        return CustomScrollView(
+          primary: false,
+          slivers: <Widget>[
+            SliverPadding(
+              padding: const EdgeInsets.all(20),
+              sliver: SliverGrid.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 1,
+                  mainAxisSpacing: 3.0,
+                  crossAxisSpacing: 10.0,
+                  childAspectRatio: 8.0,
+                ),
+                itemCount: topico.length,
+                itemBuilder: (context, index) {
+                  return 
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white, 
+                        boxShadow: [BoxShadow(color: Colors.black, blurRadius: 2.0)],
+                        ),
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(child: Text(topico[index]['nome'], textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)),
+                        ],
+                      ),
+                    );
+                },
+              ),
             ),
-
-            ListTile(title: Text('Idade Média'),
-            subtitle: Text('conceitos básicos sobre a era medieval'), 
-            leading: Icon(Icons.castle),
-            ),
-
-            ListTile(title: Text('América Colonial'), 
-            subtitle: Text('a era das navegações e colonização da América'), 
-            leading: Icon(Icons.south_america_sharp),
-            ),
-
-            //quando implementar o bd, trocar isso por um listview.build
           ],
-        ),
+        );
+        },
       ),
-          //quando eu criar um builder na tela de disciplinas vou mudar isso aqui pra exibir o nome da disciplina no appbar
     );
   }
 }

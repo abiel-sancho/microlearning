@@ -1,98 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:testeapp/topicos.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-
-class Disciplinas extends StatelessWidget{
+class Disciplinas extends StatefulWidget{
 
   const Disciplinas({super.key});
 
   @override
 
+  State<Disciplinas> createState() => _DisciplinasState();
+}
+
+class _DisciplinasState extends State<Disciplinas> {
+
+    final _disciplinaStream = Supabase.instance.client
+      .from('disciplina')
+      .stream(primaryKey: ['id']);
+
+  @override
+
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: CustomScrollView(
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _disciplinaStream,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final disciplina = snapshot.data!;
+        return CustomScrollView(
           primary: false,
           slivers: <Widget>[
             SliverPadding(
               padding: const EdgeInsets.all(20),
-              sliver: SliverGrid.count( //trocar isso aqui por "SliverGrid.build" e construir cada sliver com base no BD
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                crossAxisCount: 2,
-                children: <Widget>[
-
-                  // TEM COMO EU FAZER ISSO SEM REPETIR TANTO?
-                  
-                  GestureDetector(
-                    onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => Topicos()));},
+              sliver: SliverGrid.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10.0,
+                  crossAxisSpacing: 10.0,
+                  childAspectRatio: 1.0,
+                ),
+                itemCount: disciplina.length,
+                itemBuilder: (context, index) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => Topicos(idDisciplina: disciplina[index]['id'].toString())));
+                    },
                     child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.amber, 
+                        boxShadow: [BoxShadow(color: Colors.black, blurRadius: 5.0)],
+                        borderRadius: BorderRadius.circular(10.0)
+                        ),
                       padding: const EdgeInsets.all(8),
-                      color: Colors.yellow,
-                      child: const Column(children: [
-                        Text('História'),
-                        Icon(size: 150, Icons.book_outlined, color:Colors.white)
-                      ],),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(child: Text(disciplina[index]['nome'], textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                          const Icon(Icons.question_mark, size: 100),
+                        ],
+                      ),
                     ),
-                  ),
-
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.red,child: const Column(children: [
-                      Text('Matemática'),
-                      Icon(size: 150, Icons.architecture_outlined, color:Colors.white)
-                    ],),
-                  ),
-
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.blue,
-                    child: const Column(children: [
-                      Text('Inglês'),
-                      Icon(size: 150, Icons.question_mark_outlined, color:Colors.white)
-                    ],),
-                  ),
-
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.orange,
-                    child: const Column(children: [
-                      Text('Português'),
-                      Icon(size: 150, Icons.question_mark_outlined, color:Colors.white)
-                    ],),
-                  ),
-
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.brown,
-                    child: const Column(children: [
-                      Text('Geografia'),
-                      Icon(size: 150, Icons.question_mark_outlined, color:Colors.white)
-                    ],),
-                  ),
-
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.purple,
-                    child: const Column(children: [
-                      Text('Química'),
-                      Icon(size: 150, Icons.question_mark_outlined, color:Colors.white)
-                    ],),
-                  ),
-
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.cyan,
-                    child: const Column(children: [
-                      Text('Biologia'),
-                      Icon(size: 150, Icons.question_mark_outlined, color:Colors.white)
-                    ],),
-                  )
-                ],
+                  );
+                },
               ),
             ),
           ],
-        ),
+        );
+        },
       ),
     );
   }
