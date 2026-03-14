@@ -1,76 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:testeapp/disciplinas.dart';
-import 'package:testeapp/registrar.dart';
+//import 'package:testeapp/registrar.dart';
+import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 
-
-class Login extends StatefulWidget {
+class Login extends StatelessWidget {
   const Login({super.key});
 
   @override
-  State<Login> createState() => _LoginState();
-}
-
-
-class _LoginState extends State<Login> {
-
-  final TextEditingController controllerUsuario = TextEditingController();
-  final TextEditingController controllerSenha = TextEditingController();
-
-  @override
-  Widget build(BuildContext context){
-
-    String usuariocerto = 'abiel';
-    String senhacerta = '123';
-
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text('Login'),
-      ),
-      body: //StreamBuilder<List<Map<String, Dynamic>>>(stream: _someThing, builder: builder)
-      Center(
+      body: Padding(
+        padding: const EdgeInsets.only(left: 60, right: 60),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text('Usuário'),
-            SizedBox(width: 200, child: TextField(controller: controllerUsuario,)),
-            SizedBox(height: 30),
-
-            Text('Senha'),
-            SizedBox(width: 200, child: TextField(obscureText: true,obscuringCharacter: '•', controller: controllerSenha,)),
-            SizedBox(height: 30),
-
-            ElevatedButton(onPressed: () {
-              if(senhacerta==controllerSenha.text && usuariocerto==controllerUsuario.text) {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => Disciplinas()));
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Usuário ou senha incorretos!', textAlign: TextAlign.center,),
-                      duration: const Duration(seconds: 5),
-                      width: 280,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 20,
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  );
-                }
+          children: [
+            SizedBox(height: 100),
+            SupaEmailAuth(
+              onSignInComplete: (response) {
+                // Navegar para a Home após o login bem-sucedido
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Disciplinas()),
+                );
               },
-               child: Text('Login')),
-
-            SizedBox(height: 30),
-
-            Row( mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-              Text('Não tem uma conta?'),
-              TextButton(onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => Registrar()));}, child: Text('Criar conta'))
-              ],
-            )
+              onSignUpComplete: (response) {
+                SnackBar(
+                  content: const Text(
+                    'Conta criada com sucesso!\nFaça login.',
+                    textAlign: TextAlign.center,
+                  ),
+                  duration: const Duration(seconds: 5),
+                  width: 280,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 20),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                );
+              },
+              onError: (error) {
+            
+              },
+            ),
           ],
         ),
       ),

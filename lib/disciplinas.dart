@@ -21,6 +21,7 @@ class _DisciplinasState extends State<Disciplinas> {
 
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(leading: IconButton(onPressed:() {Navigator.pop(context);}, icon: Icon(Icons.arrow_back)),),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _disciplinaStream,
         builder: (context, snapshot) {
