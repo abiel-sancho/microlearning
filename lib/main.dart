@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:testeapp/login.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+//import 'package:testeapp/logindois.dart';
 
 void main() async {
 

@@ -1,45 +1,83 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/disciplinas.dart';
-//import 'package:testeapp/registrar.dart';
-import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 
-class Login extends StatelessWidget {
-  const Login({super.key});
+class Login extends StatefulWidget {
+  const Login({Key? key}) : super(key: key);
+
+  @override
+  State<Login> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<Login> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Disciplinas()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro: ($e)')),
+        );
+      }
+    }
+    setState(() => _isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Login')),
       body: Padding(
-        padding: const EdgeInsets.only(left: 60, right: 60),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(height: 100),
-            SupaEmailAuth(
-              onSignInComplete: (response) {
-                // Navegar para a Home após o login bem-sucedido
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Disciplinas()),
-                );
-              },
-              onSignUpComplete: (response) {
-                SnackBar(
-                  content: const Text(
-                    'Conta criada com sucesso!\nFaça login.',
-                    textAlign: TextAlign.center,
-                  ),
-                  duration: const Duration(seconds: 5),
-                  width: 280,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 20),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                );
-              },
-              onError: (error) {
-            
-              },
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'E-mail:',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _passwordController,
+              decoration: const InputDecoration(
+                labelText: 'Senha:',
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _login,
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('Login'),
+              ),
             ),
           ],
         ),
