@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:testeapp/login.dart';
+//import 'package:testeapp/disciplinas.dart';
+//import 'package:testeapp/login.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-//import 'package:testeapp/logindois.dart';
+import 'package:testeapp/logindois.dart';
 
 void main() async {
 
@@ -20,11 +21,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'Microlearning',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 38, 172, 107)),
       ),
-      home: Login(),
+      home: LoginDois(),
     );
   }
 }

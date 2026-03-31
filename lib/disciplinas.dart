@@ -4,24 +4,117 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Disciplinas extends StatefulWidget{
 
-  const Disciplinas({super.key});
+  Disciplinas({super.key});
 
+    final user = Supabase.instance.client.auth.currentUser;
+
+    late final String emailUser = user!.email ?? '';
+    
   @override
+
 
   State<Disciplinas> createState() => _DisciplinasState();
 }
 
+
+
 class _DisciplinasState extends State<Disciplinas> {
+
+
 
     final _disciplinaStream = Supabase.instance.client
       .from('disciplina')
       .stream(primaryKey: ['id']);
 
+    late final _isProfessor = Supabase.instance.client
+      .from('user_professor')
+      .stream(primaryKey: ['id'])
+      .eq('email', widget.emailUser)
+      .limit(1);
+
+  String selectedPage = '';
+
   @override
 
+
+
   Widget build(BuildContext context) {
+    
     return Scaffold(
+      endDrawer: Drawer(
+        child: StreamBuilder<List<Map<String, dynamic>>>(
+          stream: _isProfessor,
+          builder:(context, snapshot) {
+            if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+            
+            }
+            final isProfessor = snapshot.data!;
+            bool access = isProfessor[0]['is_professor'];
+            return ListView(
+              padding: EdgeInsets.zero,
+          children: <Widget>[
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blue),
+              child: Text(
+                'Drawer Header',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+            ),
+            Visibility(
+              visible: access,
+              child: ListTile(
+                leading: const Icon(Icons.message),
+                title: const Text('Inserir microconteúdo'),
+                onTap: () {
+                  setState(() {
+                    selectedPage = 'Messages';
+                  });
+                },
+              ),
+            ),
+            Visibility(
+              visible: access,
+              child: ListTile(
+                leading: const Icon(Icons.account_circle),
+                title: const Text('meus conteudos'),
+                onTap: () {
+                  setState(() {
+                    selectedPage = 'Profile';
+                  });
+                },
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('disciplinas'),
+              onTap: () {
+                setState(() {
+                  selectedPage = 'Settings';
+                });
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('sobre o app'),
+              onTap: () {
+                setState(() {
+                  selectedPage = 'Settings';
+                });
+              },
+            ),
+          ],
+            );
+          },
+          
+        ),
+      ),
       appBar: AppBar(leading: IconButton(onPressed:() {Navigator.pop(context);}, icon: Icon(Icons.arrow_back)),),
+      bottomNavigationBar: BottomNavigationBar(items: [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+        BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Configurações"),
+        BottomNavigationBarItem(icon: Icon(Icons.favorite), label: "Favoritos")
+      ]),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _disciplinaStream,
         builder: (context, snapshot) {

@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:testeapp/disciplinas.dart';
 //import 'package:testeapp/registrar.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
+import 'package:testeapp/inicio.dart';
+//import 'package:supabase_flutter/supabase_flutter.dart';
 
 
-class LoginDois extends StatelessWidget {
+class LoginDois extends StatefulWidget {
   const LoginDois({super.key});
 
+  @override
+  State<LoginDois> createState() => _LoginDoisState();
+}
+
+class _LoginDoisState extends State<LoginDois> {
+  String? emailUser;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -16,13 +23,16 @@ class LoginDois extends StatelessWidget {
           children: [
             SizedBox(height: 100),
             SupaEmailAuth(
-              localization: SupaEmailAuthLocalization(),
+              localization: SupaEmailAuthLocalization(enterEmail: 'entre com email',enterPassword: 'senha:'),
               onSignInComplete: (response) {
                 // Navegar para a Home após o login bem-sucedido
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Disciplinas()),
-                );
+                //TODO: verificação se é professor
+
+
+                  Navigator.push(
+                    this.context,
+                    MaterialPageRoute(builder: (context) => InicioScreen()),
+                  );
               },
               onSignUpComplete: (response) {
                 SnackBar(
