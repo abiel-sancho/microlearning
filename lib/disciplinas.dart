@@ -7,7 +7,6 @@ class Disciplinas extends StatefulWidget{
   Disciplinas({super.key});
 
     final user = Supabase.instance.client.auth.currentUser;
-
     late final String emailUser = user!.email ?? '';
     
   @override

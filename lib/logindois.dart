@@ -28,7 +28,6 @@ class _LoginDoisState extends State<LoginDois> {
                 // Navegar para a Home após o login bem-sucedido
                 //TODO: verificação se é professor
 
-
                   Navigator.push(
                     this.context,
                     MaterialPageRoute(builder: (context) => InicioScreen()),
@@ -50,7 +49,6 @@ class _LoginDoisState extends State<LoginDois> {
                 );
               },
               onError: (error) {
-            
               },
             ),
           ],

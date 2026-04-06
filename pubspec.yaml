@@ -39,6 +39,9 @@ dependencies:
   markdown: ^7.3.0
   flutter_markdown_plus: ^1.0.7
   supabase_auth_ui: ^0.5.5
+  flutter_quill: ^11.5.0
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
