@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:testeapp/criar_conteudo.dart';
 import 'package:testeapp/topicos.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -66,9 +67,10 @@ class _DisciplinasState extends State<Disciplinas> {
                 leading: const Icon(Icons.message),
                 title: const Text('Inserir microconteúdo'),
                 onTap: () {
-                  setState(() {
-                    selectedPage = 'Messages';
-                  });
+                  Navigator.push(
+                      this.context,
+                      MaterialPageRoute(builder: (context) => CriarConteudoScreen()),
+                    );
                 },
               ),
             ),

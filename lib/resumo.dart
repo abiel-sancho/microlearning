@@ -18,9 +18,9 @@ class Resumo extends StatefulWidget {
 class _ResumoState extends State<Resumo> {
   
   late final _resumoStream = Supabase.instance.client
-      .from('resumo')
+      .from('topico')
       .stream(primaryKey: ['id'])
-      .eq('id_topico', widget.idTopico);
+      .eq('id', widget.idTopico);
 
   @override
   Widget build(BuildContext context) {

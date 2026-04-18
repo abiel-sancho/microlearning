@@ -1,7 +1,10 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'dart:convert';
+//import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:testeapp/conversao.dart';
 
 class CriarConteudoScreen extends StatefulWidget {
   const CriarConteudoScreen({super.key});
@@ -12,6 +15,8 @@ class CriarConteudoScreen extends StatefulWidget {
 
 class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
   late QuillController _controller;
+  final TextEditingController _tituloController = TextEditingController();
+  User? user;
 
   Future<List<Map<String, dynamic>>> fetchDropdownData() async {
   final response = await Supabase.instance.client
@@ -27,6 +32,8 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
   @override
   void initState() {
     super.initState();
+     user = Supabase.instance.client.auth.currentUser;
+     log(user.toString());
     _controller = QuillController.basic();
   }
 
@@ -77,6 +84,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
             ),
             SizedBox(height: 8,),
             TextField(
+            controller: _tituloController,
             decoration: InputDecoration(
               border: OutlineInputBorder(),
               hintText: 'Insira o nome do novo tópico',
@@ -95,30 +103,53 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                 showListCheck: false,
                 showInlineCode: false,
                 showCodeBlock: false,
+                showStrikeThrough: false
               ),
             ),
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                child: QuillEditor(
-                  controller: _controller,
-                  focusNode: FocusNode(),
-                  scrollController: ScrollController(),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                            
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    border: Border.all()
+                  ),
+                  child: QuillEditor(
+                    controller: _controller,
+                    focusNode: FocusNode(),
+                    scrollController: ScrollController(),
+                  ),
                 ),
               ),
             ),
           ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            final content = jsonEncode(_controller.document.toDelta().toJson());
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Conteúdo salvo: $content')),
-            );
-          },
-          child: const Icon(Icons.save),
-        ),
-      );
-    });
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () async {
+              // 1. Pega o JSON do editor
+              final List<dynamic> deltaJson = _controller.document
+                  .toDelta()
+                  .toJson();
+
+              // 2. Converte usando a função manual acima
+              final String markdownFinal =  Conversao.deltaToMarkdown(deltaJson);
+
+              // 3. Salva no Supabase
+              await Supabase.instance.client.from('topico').insert({
+                'nome': _tituloController.text,
+                'id_disciplina': _selectedValue,
+                'texto': markdownFinal, // Aqui vai o texto formatado!
+                'uid': user!.id
+              });
+
+              log("Markdown gerado: $markdownFinal");
+            },
+            child: const Icon(Icons.save),
+          ),
+        );
+      },
+    );
   }
 }
