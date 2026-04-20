@@ -57,7 +57,7 @@ class _InicioScreenState extends State<InicioScreen> {
                   if (mounted) {
                     Navigator.push(
                       this.context,
-                      MaterialPageRoute(builder: (context) => Disciplinas()),
+                      MaterialPageRoute(builder: (context) => Disciplinas( ), ),
                     );
                   }
                 } catch (e) {

@@ -9,10 +9,10 @@ class Login extends StatefulWidget {
   const Login({super.key});
 
   @override
-  State<Login> createState() => _LoginDoisState();
+  State<Login> createState() => _LoginState();
 }
 
-class _LoginDoisState extends State<Login> {
+class _LoginState extends State<Login> {
   String? emailUser;
   @override
   Widget build(BuildContext context) {

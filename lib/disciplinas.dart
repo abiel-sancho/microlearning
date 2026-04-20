@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:testeapp/criar_conteudo.dart';
+import 'package:testeapp/minhas_disciplinas.dart';
 import 'package:testeapp/topicos.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -80,9 +81,10 @@ class _DisciplinasState extends State<Disciplinas> {
                 leading: const Icon(Icons.account_circle),
                 title: const Text('meus conteudos'),
                 onTap: () {
-                  setState(() {
-                    selectedPage = 'Profile';
-                  });
+                  Navigator.push(
+                  this.context,
+                  MaterialPageRoute(builder: (context) => MinhasDisciplinas())
+                  );
                 },
               ),
             ),

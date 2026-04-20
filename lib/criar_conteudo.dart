@@ -49,7 +49,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
     future: fetchDropdownData(),
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) {
-        return const CircularProgressIndicator();
+        return Center(child: SizedBox(height:50, width: 50, child: const CircularProgressIndicator()));
       }
 
       if (snapshot.hasError) {
