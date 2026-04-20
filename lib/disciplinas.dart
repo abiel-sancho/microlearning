@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:testeapp/criar_conteudo.dart';
-import 'package:testeapp/minhas_disciplinas.dart';
+import 'package:testeapp/meus_resumos.dart';
 import 'package:testeapp/topicos.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -83,7 +83,7 @@ class _DisciplinasState extends State<Disciplinas> {
                 onTap: () {
                   Navigator.push(
                   this.context,
-                  MaterialPageRoute(builder: (context) => MinhasDisciplinas())
+                  MaterialPageRoute(builder: (context) => MeusResumos())
                   );
                 },
               ),
