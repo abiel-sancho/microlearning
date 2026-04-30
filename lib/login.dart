@@ -23,7 +23,24 @@ class _LoginState extends State<Login> {
           children: [
             SizedBox(height: 100),
             SupaEmailAuth(
-              localization: SupaEmailAuthLocalization(enterEmail: 'entre com email',enterPassword: 'senha:'),
+              localization: SupaEmailAuthLocalization(
+                enterEmail: 'Digite seu email:',
+                enterPassword: 'Senha:', 
+                backToSignIn: 'Voltar para Login',
+                confirmPassword: 'Confirme a senha',
+                confirmPasswordError: 'As senhas não são iguais',
+                dontHaveAccount: 'Não tem uma conta? Criar',
+                forgotPassword: 'Esqueceu a senha?',
+                haveAccount: 'Já tem uma conta? Entrar',
+                passwordLengthError: 'Digite uma senha que tenha no mínimo 6 dígitos',
+                passwordResetSent: 'Email de redefinição de senha enviado',
+                requiredFieldError: 'Esse campo deve ser preenchido',
+                sendPasswordReset: 'Enviar email de redefinição de senha',
+                signIn: 'Entrar',
+                signUp: 'Criar conta',
+                unexpectedError: 'Um erro inesperado aconteceu',
+                validEmailError: 'Digite um email válido'
+                ),
               onSignInComplete: (response) {
                 // Navegar para a Home após o login bem-sucedido
                 //TODO: verificação se é professor

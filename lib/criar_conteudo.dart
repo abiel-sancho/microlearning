@@ -17,7 +17,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
   late QuillController _controller;
   final TextEditingController _tituloController = TextEditingController();
   User? user;
-
+  Supabase? supabase;
   Future<List<Map<String, dynamic>>> fetchDropdownData() async {
   final response = await Supabase.instance.client
       .from('disciplina')
@@ -33,6 +33,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
   void initState() {
     super.initState();
      user = Supabase.instance.client.auth.currentUser;
+     supabase = Supabase.instance;
      log(user.toString());
     _controller = QuillController.basic();
   }
@@ -136,14 +137,16 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
               // 2. Converte usando a função manual acima
               final String markdownFinal =  Conversao.deltaToMarkdown(deltaJson);
 
+
               // 3. Salva no Supabase
-              await Supabase.instance.client.from('topico').insert({
+                supabase!.client.from('topico').insert({
                 'nome': _tituloController.text,
                 'id_disciplina': _selectedValue,
                 'texto': markdownFinal, // Aqui vai o texto formatado!
-                'uid': user!.id
+                'uid_professor': user!.id
               });
-
+              log(user!.email ?? "");
+              log(supabase.toString());
               log("Markdown gerado: $markdownFinal");
             },
             child: const Icon(Icons.save),
