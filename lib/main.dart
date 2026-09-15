@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-//import 'package:testeapp/disciplinas.dart';
-//import 'package:testeapp/login.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-//import 'package:testeapp/criar_conteudo.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-//import 'package:testeapp/inicio.dart';
 import 'package:testeapp/login.dart';
 
 void main() async {

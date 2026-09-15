@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:testeapp/criar_conteudo.dart';
 import 'package:testeapp/meus_resumos.dart';
+import 'package:testeapp/sobre.dart';
 import 'package:testeapp/topicos.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -101,9 +102,7 @@ class _DisciplinasState extends State<Disciplinas> {
               leading: const Icon(Icons.settings),
               title: const Text('sobre o app'),
               onTap: () {
-                setState(() {
-                  selectedPage = 'Settings';
-                });
+                Navigator.push(context, MaterialPageRoute(builder: (context) => Sobre()));
               },
             ),
           ],

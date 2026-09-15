@@ -29,6 +29,8 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
 
   String? _selectedValue;
 
+  int questoesCriadas = 0; // depois mudar isso pra pegar do db a quantidade de questoes correspondentes à disciplina sendo criada/editada
+
   @override
   void initState() {
     super.initState();
@@ -111,8 +113,8 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                   showStrikeThrough: false,
                 ),
               ),
-              Expanded(
-                child: Padding(
+              Expanded( child: 
+                Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -129,11 +131,38 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                   ),
                 ),
               ),
+              // adicionar aqui um botão de "criar questão"
+              // quando o usuario pressionar o botao surge um popup onde ele pode
+              // digitar o enunciado da questão e as opções, além de selecionar qual é a correta
+              // e em baixo um botão pra concluir; quando concluir volta pra tela normal de criação de conteudo
+              // com um tile pra questão criada.
+              // o usuario deve criar até 4 questões, então o botão de criar uma questão aparece embaixo do tile das quedtões ja criadas
+
+              Expanded(
+                child: Column(
+                  children: [
+                    ListView(
+                      children: [
+                        ListTile(
+                          leading: Icon(Icons.add),
+                          title: Text("Adicionar questão"),
+                          onTap: null,
+                        ),
+                      ],
+                    ),
+                    //ListView.builder(
+                      //itemCount: questoesCriadas,               AQUI MDS QUE PROCESSO
+                      //itemBuilder: //????,
+                      //)
+                  ],
+                )
+
+              ),
             ],
           ),
+
           floatingActionButton: FloatingActionButton(
             onPressed: () async {
-              // 1. Validação simples antes de tentar salvar
               if (_tituloController.text.trim().isEmpty ||
                   _selectedValue == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -147,17 +176,16 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
               }
 
               try {
-                // 2. Pega o JSON do editor
                 final List<dynamic> deltaJson = _controller.document
                     .toDelta()
                     .toJson();
 
-                // 3. Converte usando a função manual acima
+
                 final String markdownFinal = Conversao.deltaToMarkdown(
                   deltaJson,
                 );
 
-                // 4. Salva no Supabase aguardando a resposta com 'await'
+
                 await supabase!.client.from('topico').insert({
                   'nome': _tituloController.text,
                   'id_disciplina': _selectedValue,
@@ -167,17 +195,16 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
 
                 log("Markdown gerado: $markdownFinal");
 
-                // 5. Exibe a mensagem de sucesso
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Conteúdo salvo com sucesso!'),
                     ),
                   );
-                  Navigator.pop(context); // Fecha a tela de criação
+                  Navigator.pop(context);
                 }
               } catch (e) {
-                // 6. Se algo der errado, mostra o erro na tela em vez de falhar em silêncio
                 log("Erro ao salvar no banco: $e");
                 if (mounted) {
                   ScaffoldMessenger.of(
