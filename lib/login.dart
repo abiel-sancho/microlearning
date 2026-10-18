@@ -42,8 +42,6 @@ class _LoginState extends State<Login> {
                 validEmailError: 'Digite um email válido'
                 ),
               onSignInComplete: (response) {
-                // Navegar para a Home após o login bem-sucedido
-                //TODO: verificação se é professor
 
                   Navigator.push(
                     this.context,

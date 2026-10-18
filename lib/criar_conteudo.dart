@@ -1,10 +1,10 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 //import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/conversao.dart';
+import 'package:testeapp/criar_questao.dart';
 
 class CriarConteudoScreen extends StatefulWidget {
   const CriarConteudoScreen({super.key});
@@ -22,7 +22,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
     final response = await Supabase.instance.client
         .from('disciplina')
         .select('id, nome') // Busque apenas o ID e o Nome que deseja exibir
-        .order('nome', ascending: true); // Opcional: ordenar alfabeticamente
+        .order('nome', ascending: true);
 
     return response;
   }
@@ -30,7 +30,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
   String? _selectedValue;
 
   int questoesCriadas = 0; // depois mudar isso pra pegar do db a quantidade de questoes correspondentes à disciplina sendo criada/editada
-
+  bool maximoDeQuestoes = false;
   @override
   void initState() {
     super.initState();
@@ -69,97 +69,149 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
 
         return Scaffold(
           appBar: AppBar(title: const Text('Criar Conteúdo'), elevation: 0),
-          body: Column(
-            children: [
-              SizedBox(height: 20),
-              DropdownButton<String>(
-                value: _selectedValue,
-                hint: const Text("Selecione uma disciplina"),
-                isExpanded: true, // Ocupa toda a largura disponível
-                items: items.map((item) {
-                  return DropdownMenuItem<String>(
-                    value: item['id']
-                        .toString(), // O ID que será salvo no estado
-                    child: Text(item['nome']), // O texto que aparece no app
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedValue = newValue;
-                  });
-                },
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: _tituloController,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Insira o nome do novo tópico',
-                ),
-              ),
-              QuillSimpleToolbar(
-                controller: _controller,
-                config: QuillSimpleToolbarConfig(
-                  showBackgroundColorButton: false,
-                  showAlignmentButtons: false,
-                  showFontFamily: false,
-                  showFontSize: false,
-                  showSubscript: false,
-                  showSuperscript: false,
-                  showColorButton: false,
-                  showListCheck: false,
-                  showInlineCode: false,
-                  showCodeBlock: false,
-                  showStrikeThrough: false,
-                ),
-              ),
-              Expanded( child: 
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      border: Border.all(),
-                    ),
-                    child: QuillEditor(
-                      controller: _controller,
-                      focusNode: FocusNode(),
-                      scrollController: ScrollController(),
+          body: SingleChildScrollView(
+            child: Column(
+                children: [
+                  SizedBox(height: 20),
+                  DropdownButton<String>(
+                    value: _selectedValue,
+                    hint: const Text("Selecione uma disciplina"),
+                    isExpanded: true, // Ocupa toda a largura disponível
+                    items: items.map((item) {
+                      return DropdownMenuItem<String>(
+                        value: item['id']
+                            .toString(), // O ID que será salvo no estado
+                        child: Text(item['nome']), // O texto que aparece no app
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedValue = newValue;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 8),
+                  TextField(
+                    controller: _tituloController,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Insira o nome do novo tópico',
                     ),
                   ),
-                ),
-              ),
-              // adicionar aqui um botão de "criar questão"
-              // quando o usuario pressionar o botao surge um popup onde ele pode
-              // digitar o enunciado da questão e as opções, além de selecionar qual é a correta
-              // e em baixo um botão pra concluir; quando concluir volta pra tela normal de criação de conteudo
-              // com um tile pra questão criada.
-              // o usuario deve criar até 4 questões, então o botão de criar uma questão aparece embaixo do tile das quedtões ja criadas
-
-              Expanded(
-                child: Column(
-                  children: [
-                    ListView(
-                      children: [
-                        ListTile(
-                          leading: Icon(Icons.add),
-                          title: Text("Adicionar questão"),
-                          onTap: null,
-                        ),
-                      ],
+                  QuillSimpleToolbar(
+                    controller: _controller,
+                    config: QuillSimpleToolbarConfig(
+                      showBackgroundColorButton: false,
+                      showAlignmentButtons: false,
+                      showFontFamily: false,
+                      showFontSize: false,
+                      showSubscript: false,
+                      showSuperscript: false,
+                      showColorButton: false,
+                      showListCheck: false,
+                      showInlineCode: false,
+                      showCodeBlock: false,
+                      showStrikeThrough: false,
                     ),
-                    //ListView.builder(
-                      //itemCount: questoesCriadas,               AQUI MDS QUE PROCESSO
-                      //itemBuilder: //????,
-                      //)
-                  ],
-                )
+                  ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+              
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          border: Border.all(),
+                        ),
+                        child: QuillEditor(
+                          controller: _controller,
+                          focusNode: FocusNode(),
+                          scrollController: ScrollController(),
+                        ),
+                      ),
+                    ),
+                  // adicionar aqui um botão de "criar questão"
+                  // quando o usuario pressionar o botao surge um popup onde ele pode
+                  // digitar o enunciado da questão e as opções, além de selecionar qual é a correta
+                  // e em baixo um botão pra concluir; quando concluir volta pra tela normal de criação de conteudo
+                  // com um tile pra questão criada.
+                  // o usuario deve criar até 4 questões, então o botão de criar uma questão aparece embaixo do tile das quedtões ja criadas
+                    Column(
+                      children: [
+                        ListView(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            ListTile(
+                              enabled: !maximoDeQuestoes,
+                              leading: Icon(Icons.add),
+                              title: Text("Adicionar questão"),
+                              onTap: () async {
+                                if (_selectedValue == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Selecione uma disciplina primeiro.'),
+                                    ),
+                                  );
+                                  return;
+                                }
 
+                                try {
+                                  // Cria o tópico para que a questão possa referenciá-lo.
+                                  final topico = await supabase!.client
+                                      .from('topico')
+                                      .insert({'id_disciplina': _selectedValue})
+                                      .select('id')
+                                      .single();
+
+                                  if (!mounted) return;
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CriarQuestao(
+                                        idTopico: topico['id'].toString(),
+                                      ),
+                                    ),
+                                  );
+
+                                  if (!mounted) return;
+                                  setState(() {
+                                    questoesCriadas++;
+                                    if (questoesCriadas >= 4) {
+                                      maximoDeQuestoes = true;
+                                    }
+                                  });
+                                } catch (error) {
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Não foi possível criar a questão: $error',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: questoesCriadas,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              leading: Text((index+1).toString()),
+                              title: Text("teste")
+                            );
+                          },
+                          )
+                      ],
+                    )
+                ],
               ),
-            ],
           ),
+
 
           floatingActionButton: FloatingActionButton(
             onPressed: () async {
@@ -186,7 +238,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                 );
 
 
-                await supabase!.client.from('topico').insert({
+                await supabase!.client.from('topico').upsert({
                   'nome': _tituloController.text,
                   'id_disciplina': _selectedValue,
                   'texto': markdownFinal,
