@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:testeapp/questoes_aluno.dart';
 
 
 class Resumo extends StatefulWidget {
@@ -37,9 +38,38 @@ class _ResumoState extends State<Resumo> {
             }
             else{
 final resumo = snapshot.data!;
+          // O campo "texto" pode vir nulo do banco (tópico sem conteúdo).
+          final texto = (resumo[0]['texto'] ?? '').toString().trim();
 
-          return Center(
-            child: Markdown(data: resumo[0]['texto'])
+          return Column(
+            children: [
+              Expanded(
+                child: Markdown(
+                  data: texto.isEmpty ? '*Este tópico ainda não tem texto.*' : texto,
+                ),
+              ),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QuestoesAluno(idTopico: widget.idTopico),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.quiz),
+                      label: const Text('Ir para as questões'),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           );
             }
           }
