@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/conversao.dart';
+import 'package:testeapp/tema.dart';
 
 class EditarResumoScreen extends StatefulWidget {
   final String idTopico;
@@ -128,7 +129,9 @@ class _EditarResumoScreenState extends State<EditarResumoScreen> {
             title: const Text('Editar Conteúdo'),
             elevation: 0,
           ),
-          body: Column(
+          body: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
             children: [
               const SizedBox(height: 20),
               DropdownButton<String>(
@@ -173,13 +176,10 @@ class _EditarResumoScreenState extends State<EditarResumoScreen> {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      border: Border.all()
-                    ),
+                    decoration: AppTema.cartao(context, sombra: false),
                     child: QuillEditor(
                       controller: _controller!,
                       focusNode: FocusNode(),
@@ -189,6 +189,7 @@ class _EditarResumoScreenState extends State<EditarResumoScreen> {
                 ),
               ),
             ],
+          ),
           ),
           floatingActionButton: FloatingActionButton(
             onPressed: _atualizarConteudo,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/revisao_service.dart';
+import 'package:testeapp/tema.dart';
 
 /// Mostra ao aluno, uma por vez, as questões de um tópico e grava cada
 /// resposta na tabela `respostas_aluno` para consulta posterior (feedback).
@@ -243,13 +244,13 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
     Color? corIcone;
     if (_confirmada) {
       if (letra == correta) {
-        cor = Colors.green.shade100;
+        cor = AppTema.acertoSuave;
         icone = Icons.check_circle;
-        corIcone = Colors.green;
+        corIcone = AppTema.acerto;
       } else if (selecionada) {
-        cor = Colors.red.shade100;
+        cor = Theme.of(context).colorScheme.errorContainer;
         icone = Icons.cancel;
-        corIcone = Colors.red;
+        corIcone = Theme.of(context).colorScheme.error;
       }
     } else if (selecionada) {
       cor = Theme.of(context).colorScheme.primaryContainer;
@@ -355,7 +356,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
       child: ListTile(
         leading: Icon(
           resposta.acertou ? Icons.check_circle : Icons.cancel,
-          color: resposta.acertou ? Colors.green : Colors.red,
+          color: resposta.acertou ? AppTema.acerto : Theme.of(context).colorScheme.error,
         ),
         title: Text(
           '${indice + 1}. ${resposta.questao['enunciado']}',

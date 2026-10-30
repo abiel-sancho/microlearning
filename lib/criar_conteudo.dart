@@ -5,6 +5,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/conversao.dart';
 import 'package:testeapp/criar_questao.dart';
+import 'package:testeapp/tema.dart';
 
 class CriarConteudoScreen extends StatefulWidget {
   const CriarConteudoScreen({super.key});
@@ -70,6 +71,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
         return Scaffold(
           appBar: AppBar(title: const Text('Criar Conteúdo'), elevation: 0),
           body: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
                 children: [
                   SizedBox(height: 20),
@@ -115,14 +117,10 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                     ),
                   ),
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Container(
                         padding: const EdgeInsets.all(16),
-              
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          border: Border.all(),
-                        ),
+                        decoration: AppTema.cartao(context, sombra: false),
                         child: QuillEditor(
                           controller: _controller,
                           focusNode: FocusNode(),

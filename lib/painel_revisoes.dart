@@ -96,7 +96,7 @@ class _PainelRevisoesState extends State<PainelRevisoes> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.event_repeat),
+                    Icon(Icons.event_repeat, color: tema.colorScheme.primary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

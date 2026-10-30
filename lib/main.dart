@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:testeapp/criar_questao.dart';
 import 'package:testeapp/login.dart';
+import 'package:testeapp/tema.dart';
 
 void main() async {
 
@@ -31,9 +32,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Microlearning',
 
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 38, 172, 107)),
-      ),
+      theme: AppTema.claro,
       home: Login(),
     );
   }

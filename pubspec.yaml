@@ -47,6 +47,9 @@ dependencies:
     sdk: flutter
 
 dev_dependencies:
+
+  flutter_launcher_icons: "^0.14.4"
+
   flutter_test:
     sdk: flutter
 
@@ -56,6 +59,12 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+flutter_launcher_icons:
+    android: "logoapp"
+    ios: true
+    image_path: "assets/icon/logoapp.png"
+    min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -84,17 +93,14 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
+  fonts:
+    - family: Chrysanthemum
+      fonts:
+        - asset: assets/fonts/Chrysanthemum-Bold.otf
+
+    - family: MarkoOne
+      fonts:
+        - asset: assets/fonts/MarkoOne-Regular.ttf
+
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package

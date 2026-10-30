@@ -3,7 +3,9 @@ import 'package:testeapp/criar_conteudo.dart';
 import 'package:testeapp/meus_resumos.dart';
 import 'package:testeapp/sobre.dart';
 import 'package:testeapp/topicos.dart';
+import 'package:testeapp/tema.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:testeapp/icones_disciplina.dart';
 
 class Disciplinas extends StatefulWidget{
 
@@ -56,8 +58,8 @@ class _DisciplinasState extends State<Disciplinas> {
             return ListView(
               padding: EdgeInsets.zero,
           children: <Widget>[
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
+            DrawerHeader(
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
               child: Text(
                 'Drawer Header',
                 style: TextStyle(color: Colors.white, fontSize: 24),
@@ -143,19 +145,22 @@ class _DisciplinasState extends State<Disciplinas> {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => Topicos(idDisciplina: disciplina[index]['id'].toString())));
                     },
                     child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.amber, 
-                        boxShadow: [BoxShadow(color: Colors.black, blurRadius: 5.0)],
-                        borderRadius: BorderRadius.circular(10.0)
-                        ),
+                      decoration: AppTema.cartao(
+                        context,
+                        cor: Theme.of(context).colorScheme.secondaryContainer,
+                      ),
                       padding: const EdgeInsets.all(8),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Flexible(child: Text(disciplina[index]['nome'], textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis)),
-                          const Icon(Icons.question_mark, size: 100),
+                          Flexible(child: Text(disciplina[index]['nome'], 
+                          textAlign: TextAlign.center, 
+                          maxLines: 1, 
+                          overflow: TextOverflow.ellipsis, 
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onSecondaryContainer))),
+                          Icon(iconeDaDisciplina(disciplina[index]), size: 100, color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.6)),
                         ],
                       ),
                     ),

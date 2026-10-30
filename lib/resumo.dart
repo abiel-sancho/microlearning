@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:testeapp/questoes_aluno.dart';
+import 'package:testeapp/tema.dart';
 
 
 class Resumo extends StatefulWidget {
@@ -34,7 +35,7 @@ class _ResumoState extends State<Resumo> {
             return const Center(child: CircularProgressIndicator());
           }else{
             if(snapshot.data == null || snapshot.data!.isEmpty){
- return const Center(child: Markdown(data: '# Ainda não tem nenhum resumo aqui! \n\n testando o **markdown**\n *deu certoooo*'),);
+ return Center(child: Markdown(styleSheet: AppTema.markdown(context), data: '# Ainda não tem nenhum resumo aqui! \n\n testando o **markdown**\n *deu certoooo*'),);
             }
             else{
 final resumo = snapshot.data!;
@@ -45,6 +46,7 @@ final resumo = snapshot.data!;
             children: [
               Expanded(
                 child: Markdown(
+                  styleSheet: AppTema.markdown(context),
                   data: texto.isEmpty ? '*Este tópico ainda não tem texto.*' : texto,
                 ),
               ),

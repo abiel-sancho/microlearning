@@ -19,7 +19,7 @@ class Sobre extends StatelessWidget{
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("Título do app?", style: TextStyle(fontSize: 40), textAlign: TextAlign.center,),
+            Text("Título do app?", style: TextStyle(fontSize: 40, color: Theme.of(context).colorScheme.primary), textAlign: TextAlign.center,),
             SizedBox(height: 10),
             Text("Esta aplicação tem como objetivo principal auxiliar no aprendizado de novos conceitos, assim como na manutenção de conhecimentos prévios, especialmente de alunos do ensino médio, com um foco no auxílio do estudos desses alunos para o ENEM.\nUtilizando da tecnologia de revisão espaçada, o app complementa métodos tradicionais de ensino."),
             SizedBox(height: 10),

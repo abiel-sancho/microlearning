@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/resumo.dart';
+import 'package:testeapp/tema.dart';
 
 
 class Topicos extends StatefulWidget {
@@ -40,7 +41,7 @@ class _TopicosState extends State<Topicos> {
               sliver: SliverGrid.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 1,
-                  mainAxisSpacing: 3.0,
+                  mainAxisSpacing: 10.0,
                   crossAxisSpacing: 10.0,
                   childAspectRatio: 8.0,
                 ),
@@ -52,10 +53,7 @@ class _TopicosState extends State<Topicos> {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => Resumo(idTopico: topico[index]['id'].toString())));
                     },
                       child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white, 
-                          boxShadow: [BoxShadow(color: Colors.black, blurRadius: 2.0)],
-                          ),
+                        decoration: AppTema.cartao(context),
                         padding: const EdgeInsets.all(8),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/editar_resumo.dart';
+import 'package:testeapp/tema.dart';
 
 class MeusResumos extends StatefulWidget {
   const MeusResumos({super.key});
@@ -64,7 +65,7 @@ class _MinhasState extends State<MeusResumos> {
                 sliver: SliverGrid.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 1,
-                    mainAxisSpacing: 3.0,
+                    mainAxisSpacing: 10.0,
                     crossAxisSpacing: 10.0,
                     childAspectRatio: 8.0,
                   ),
@@ -80,12 +81,7 @@ class _MinhasState extends State<MeusResumos> {
                         );
                       },
                       child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(color: Colors.black, blurRadius: 2.0),
-                          ],
-                        ),
+                        decoration: AppTema.cartao(context),
                         padding: const EdgeInsets.all(8),
                         child: Row(
                           children: [
@@ -127,7 +123,7 @@ class _MinhasState extends State<MeusResumos> {
                                             Navigator.of(context).pop(); // 2. Fecha o modal primeiro
                                             await deletarItem(topico[index]['id']); // 3. Depois deleta o item
                                           }, 
-                                          child: const Text('Sim', style: TextStyle(color: Colors.red)),
+                                          child: Text('Sim', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                                         )
                                       ],
                                     );

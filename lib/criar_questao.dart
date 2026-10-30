@@ -72,6 +72,7 @@ class _CriarQuestaoState extends State<CriarQuestao> {
     return Scaffold(
       appBar: AppBar(title: Text("Criar questão"),),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: [
             SizedBox(height: 30,),
