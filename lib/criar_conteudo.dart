@@ -30,8 +30,11 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
 
   String? _selectedValue;
 
-  int questoesCriadas = 0; // depois mudar isso pra pegar do db a quantidade de questoes correspondentes à disciplina sendo criada/editada
-  bool maximoDeQuestoes = false;
+  // Questões criadas nesta tela. Ficam só em memória até o professor salvar o
+  // conteúdo; só então são gravadas, ligadas ao id do tópico recém-criado.
+  final List<Map<String, dynamic>> _questoes = [];
+  bool get maximoDeQuestoes => _questoes.length >= 4;
+  bool _salvando = false;
   @override
   void initState() {
     super.initState();
@@ -78,12 +81,12 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                   DropdownButton<String>(
                     value: _selectedValue,
                     hint: const Text("Selecione uma disciplina"),
-                    isExpanded: true, // Ocupa toda a largura disponível
+                    isExpanded: true,
                     items: items.map((item) {
                       return DropdownMenuItem<String>(
                         value: item['id']
-                            .toString(), // O ID que será salvo no estado
-                        child: Text(item['nome']), // O texto que aparece no app
+                            .toString(),
+                        child: Text(item['nome']),
                       );
                     }).toList(),
                     onChanged: (String? newValue) {
@@ -128,12 +131,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                         ),
                       ),
                     ),
-                  // adicionar aqui um botão de "criar questão"
-                  // quando o usuario pressionar o botao surge um popup onde ele pode
-                  // digitar o enunciado da questão e as opções, além de selecionar qual é a correta
-                  // e em baixo um botão pra concluir; quando concluir volta pra tela normal de criação de conteudo
-                  // com um tile pra questão criada.
-                  // o usuario deve criar até 4 questões, então o botão de criar uma questão aparece embaixo do tile das quedtões ja criadas
+
                     Column(
                       children: [
                         ListView(
@@ -145,50 +143,17 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                               leading: Icon(Icons.add),
                               title: Text("Adicionar questão"),
                               onTap: () async {
-                                if (_selectedValue == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Selecione uma disciplina primeiro.'),
-                                    ),
-                                  );
-                                  return;
-                                }
+                                // Não grava nada agora: a tela devolve os dados da
+                                // questão e eles só vão para o banco ao salvar o conteúdo.
+                                final questao = await Navigator.push<Map<String, dynamic>>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const CriarQuestao(),
+                                  ),
+                                );
 
-                                try {
-                                  // Cria o tópico para que a questão possa referenciá-lo.
-                                  final topico = await supabase!.client
-                                      .from('topico')
-                                      .insert({'id_disciplina': _selectedValue})
-                                      .select('id')
-                                      .single();
-
-                                  if (!mounted) return;
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => CriarQuestao(
-                                        idTopico: topico['id'].toString(),
-                                      ),
-                                    ),
-                                  );
-
-                                  if (!mounted) return;
-                                  setState(() {
-                                    questoesCriadas++;
-                                    if (questoesCriadas >= 4) {
-                                      maximoDeQuestoes = true;
-                                    }
-                                  });
-                                } catch (error) {
-                                  if (!mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Não foi possível criar a questão: $error',
-                                      ),
-                                    ),
-                                  );
-                                }
+                                if (questao == null || !mounted) return;
+                                setState(() => _questoes.add(questao));
                               },
                             ),
                           ],
@@ -196,11 +161,15 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                         ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: questoesCriadas,
+                          itemCount: _questoes.length,
                           itemBuilder: (context, index) {
                             return ListTile(
                               leading: Text((index+1).toString()),
-                              title: Text("teste")
+                              title: Text(
+                                _questoes[index]['enunciado'].toString(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              )
                             );
                           },
                           )
@@ -225,6 +194,9 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                 return;
               }
 
+              if (_salvando) return;
+              _salvando = true;
+
               try {
                 final List<dynamic> deltaJson = _controller.document
                     .toDelta()
@@ -236,12 +208,38 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                 );
 
 
-                await supabase!.client.from('topico').upsert({
-                  'nome': _tituloController.text,
-                  'id_disciplina': _selectedValue,
-                  'texto': markdownFinal,
-                  'uid_professor': user!.id,
-                });
+                // Cria o tópico (uma única vez) e já pega o id gerado pelo banco.
+                final topico = await supabase!.client
+                    .from('topico')
+                    .insert({
+                      'nome': _tituloController.text,
+                      'id_disciplina': _selectedValue,
+                      'texto': markdownFinal,
+                      'uid_professor': user!.id,
+                    })
+                    .select('id')
+                    .single();
+
+                // As questões são gravadas ligadas ao id do tópico recém-criado.
+                if (_questoes.isNotEmpty) {
+                  try {
+                    await supabase!.client.from('questoes').insert([
+                      for (final questao in _questoes)
+                        {...questao, 'id_topico': topico['id']},
+                    ]);
+                  } catch (_) {
+                    // Não deixa um tópico sem as questões: desfaz a criação dele.
+                    try {
+                      await supabase!.client
+                          .from('topico')
+                          .delete()
+                          .eq('id', topico['id']);
+                    } catch (_) {
+                      // Se nem o desfazer funcionar, o erro original ainda é mostrado.
+                    }
+                    rethrow;
+                  }
+                }
 
                 log("Markdown gerado: $markdownFinal");
 
@@ -261,6 +259,8 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                     context,
                   ).showSnackBar(SnackBar(content: Text('Erro ao salvar: $e')));
                 }
+              } finally {
+                _salvando = false;
               }
             },
             child: const Icon(Icons.save),

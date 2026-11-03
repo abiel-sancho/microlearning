@@ -1,11 +1,11 @@
 //import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Tela de criação de uma questão. Ela não grava nada no banco: ao concluir,
+/// devolve os dados da questão (Navigator.pop) para a tela de criação de
+/// conteúdo, que só os salva junto com o tópico, já com o id dele.
 class CriarQuestao extends StatefulWidget{
-  const CriarQuestao({super.key, required this.idTopico});
-
-  final String idTopico;
+  const CriarQuestao({super.key});
 
   @override
   State<CriarQuestao> createState() => _CriarQuestaoState();
@@ -29,7 +29,7 @@ class _CriarQuestaoState extends State<CriarQuestao> {
     super.dispose();
   }
 
-  Future<void> _salvarQuestao() async {
+  void _salvarQuestao() {
     if (_enunciadoController.text.trim().isEmpty ||
         _alternativaAController.text.trim().isEmpty ||
         _alternativaBController.text.trim().isEmpty ||
@@ -42,28 +42,14 @@ class _CriarQuestaoState extends State<CriarQuestao> {
       return;
     }
 
-    try {
-      await Supabase.instance.client.from('questoes').insert({
-        'id_topico': widget.idTopico,
-        'enunciado': _enunciadoController.text.trim(),
-        'alt_a': _alternativaAController.text.trim(),
-        'alt_b': _alternativaBController.text.trim(),
-        'alt_c': _alternativaCController.text.trim(),
-        'alt_d': _alternativaDController.text.trim(),
-        'alt_correta': _respostaCorreta,
-      });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Questão salva com sucesso.')),
-      );
-      Navigator.pop(context);
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao salvar a questão: $error')),
-      );
-    }
+    Navigator.pop(context, <String, dynamic>{
+      'enunciado': _enunciadoController.text.trim(),
+      'alt_a': _alternativaAController.text.trim(),
+      'alt_b': _alternativaBController.text.trim(),
+      'alt_c': _alternativaCController.text.trim(),
+      'alt_d': _alternativaDController.text.trim(),
+      'alt_correta': _respostaCorreta,
+    });
   }
 
   @override

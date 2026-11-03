@@ -19,15 +19,26 @@ class Resumo extends StatefulWidget {
 class _ResumoState extends State<Resumo> {
   
   late final _resumoStream = Supabase.instance.client
+    .from('topico')
+    .stream(primaryKey: ['id'])
+    .eq('id', widget.idTopico,);
+
+  late final Future<Map<String, dynamic>> _topicoFuture = Supabase.instance.client
       .from('topico')
-      .stream(primaryKey: ['id'])
-      .eq('id', widget.idTopico);
+      .select('nome')
+      .eq('id', widget.idTopico)
+      .single();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold (
       appBar: AppBar(leading: IconButton(onPressed:() {Navigator.pop(context);}, icon: Icon(Icons.arrow_back)),
-      title: Text('alguma coisa???????'),),
+      title: FutureBuilder<Map<String, dynamic>>(
+        future: _topicoFuture,
+        builder: (context, snapshot) {
+          return Text((snapshot.data?['nome'] ?? '').toString());
+        },
+      ),),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _resumoStream,
         builder: (context, snapshot) {
@@ -35,10 +46,10 @@ class _ResumoState extends State<Resumo> {
             return const Center(child: CircularProgressIndicator());
           }else{
             if(snapshot.data == null || snapshot.data!.isEmpty){
- return Center(child: Markdown(styleSheet: AppTema.markdown(context), data: '# Ainda não tem nenhum resumo aqui! \n\n testando o **markdown**\n *deu certoooo*'),);
+ return Center(child: Markdown(styleSheet: AppTema.markdown(context), data: '# Ainda não tem nenhum resumo aqui!'),);
             }
             else{
-final resumo = snapshot.data!;
+          final resumo = snapshot.data!;
           // O campo "texto" pode vir nulo do banco (tópico sem conteúdo).
           final texto = (resumo[0]['texto'] ?? '').toString().trim();
 
