@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/sm2.dart';
 
-/// Data no formato que o banco usa para colunas `date` (aaaa-mm-dd).
+/// formatação das datas que o bd usa (aaaa-mm-dd).
 String paraDataBanco(DateTime data) {
   final mes = data.month.toString().padLeft(2, '0');
   final dia = data.day.toString().padLeft(2, '0');
@@ -15,11 +15,11 @@ String dataCurta(DateTime data) {
   return '$dia/$mes';
 }
 
-/// Diferença em dias entre duas datas (já sem horário), à prova de horário de verão.
+/// Diferença em dias entre duas datas
 int _diasEntre(DateTime inicio, DateTime fim) =>
     (fim.difference(inicio).inHours / 24).round();
 
-/// O que aconteceu com o agendamento depois de uma rodada de questões.
+/// resolve quando o aluno vai revisar
 class ResultadoRevisao {
   const ResultadoRevisao({
     required this.estado,
@@ -29,13 +29,12 @@ class ResultadoRevisao {
 
   final EstadoRevisao estado;
 
-  /// false quando o aluno acertou tudo antes do dia marcado: conta só como
-  /// prática extra e a sequência de revisões não avança.
+  // só conta pra avançar a sequência espaçada se o aluno esperar até o próximo dia marcado
   final bool atualizado;
 
   final DateTime hoje;
 
-  /// Ex.: "amanhã (19/10)" ou "em 3 dias (21/10)".
+
   String get descricao {
     final dias = _diasEntre(hoje, estado.proximaRevisao);
     final quando = dias <= 1 ? 'amanhã' : 'em $dias dias';
@@ -43,7 +42,7 @@ class ResultadoRevisao {
   }
 }
 
-/// Tópico que o aluno precisa revisar hoje (ou que já estava atrasado).
+/// Tópico que o aluno precisa revisar hoje
 class RevisaoPendente {
   const RevisaoPendente({
     required this.idTopico,
@@ -54,7 +53,7 @@ class RevisaoPendente {
   final String idTopico;
   final String nomeTopico;
 
-  /// 0 = a revisão é para hoje.
+  /// 0 = hoje
   final int diasDeAtraso;
 }
 
@@ -74,8 +73,7 @@ class RevisaoService {
     );
   }
 
-  /// Registra o resultado de uma rodada de questões do tópico e agenda a
-  /// próxima revisão com o SM-2.
+  // registra o resultado e agenda a próxima revisão
   static Future<ResultadoRevisao> registrarResultado({
     required String idTopico,
     required int acertos,
@@ -95,9 +93,9 @@ class RevisaoService {
         .maybeSingle();
     final EstadoRevisao? atual = linha == null ? null : _estadoDaLinha(linha);
 
-    // Acertou tudo antes do dia marcado: é só prática extra e a sequência não
-    // avança (senão bastaria clicar em "Refazer" para pular de 3 para 15 dias).
+    // Acertou tudo antes do dia marcado a sequência não
     // Errar antes da hora continua recomeçando a sequência.
+    
     if (atual != null && atual.proximaRevisao.isAfter(hoje) && qualidade >= 3) {
       return ResultadoRevisao(estado: atual, atualizado: false, hoje: hoje);
     }
@@ -118,8 +116,7 @@ class RevisaoService {
     return ResultadoRevisao(estado: novo, atualizado: true, hoje: hoje);
   }
 
-  /// Tópicos do aluno cuja revisão é para hoje ou está atrasada, os mais
-  /// atrasados primeiro.
+  /// Tópicos que o aluno precisa revisar, os mais atrasados primeiro
   static Future<List<RevisaoPendente>> topicosParaRevisarHoje() async {
     final usuario = _client.auth.currentUser;
     if (usuario == null) return [];

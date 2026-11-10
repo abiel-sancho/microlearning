@@ -23,7 +23,7 @@ class _MinhasState extends State<MeusResumos> {
 
   final supabase = Supabase.instance.client;
 
-    // FUNÇÃO DE DELETAR O RESUMO
+    // deleta o resumo
   Future<void> deletarItem(int idParaDeletar) async {
     try {
       await supabase
@@ -49,6 +49,7 @@ class _MinhasState extends State<MeusResumos> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(leading: IconButton(onPressed:() {Navigator.pop(context);}, icon: Icon(Icons.arrow_back)),),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _resumoStream,
         builder: (context, snapshot) {
@@ -84,12 +85,8 @@ class _MinhasState extends State<MeusResumos> {
                         decoration: AppTema.cartao(context),
                         padding: const EdgeInsets.all(8),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
                                 Flexible(
                                   child: Text(
                                     topico[index]['nome'],
@@ -98,13 +95,12 @@ class _MinhasState extends State<MeusResumos> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              ],
-                            ),
+
                             Spacer(),
                             IconButton(
                               icon: const Icon(Icons.delete),
                               onPressed: () {
-                                // 1. Você deve chamar showDialog para exibir o alerta
+                                // mensagem de confirmação
                                 showDialog(
                                   context: context,
                                   builder: (BuildContext context) {
@@ -114,14 +110,14 @@ class _MinhasState extends State<MeusResumos> {
                                       actions: [
                                         TextButton(
                                           onPressed: () {
-                                            Navigator.of(context).pop(); // Apenas fecha o modal
+                                            Navigator.of(context).pop(); // NÃO
                                           }, 
                                           child: const Text('Não'),
                                         ),
                                         TextButton(
                                           onPressed: () async {
-                                            Navigator.of(context).pop(); // 2. Fecha o modal primeiro
-                                            await deletarItem(topico[index]['id']); // 3. Depois deleta o item
+                                            Navigator.of(context).pop(); 
+                                            await deletarItem(topico[index]['id']); // SIM
                                           }, 
                                           child: Text('Sim', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                                         )

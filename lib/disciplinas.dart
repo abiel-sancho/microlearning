@@ -60,10 +60,7 @@ class _DisciplinasState extends State<Disciplinas> {
           children: <Widget>[
             DrawerHeader(
               decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
-              child: Text(
-                'Drawer Header',
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
+              child: Icon(Icons.menu, color: Colors.white),
             ),
             Visibility(
               visible: access,
@@ -82,7 +79,7 @@ class _DisciplinasState extends State<Disciplinas> {
               visible: access,
               child: ListTile(
                 leading: const Icon(Icons.account_circle),
-                title: const Text('meus conteudos'),
+                title: const Text('Meus conteudos'),
                 onTap: () {
                   Navigator.push(
                   this.context,
@@ -93,7 +90,7 @@ class _DisciplinasState extends State<Disciplinas> {
             ),
             ListTile(
               leading: const Icon(Icons.settings),
-              title: const Text('disciplinas'),
+              title: const Text('Disciplinas'),
               onTap: () {
                 setState(() {
                   selectedPage = 'Settings';
@@ -102,7 +99,7 @@ class _DisciplinasState extends State<Disciplinas> {
             ),
             ListTile(
               leading: const Icon(Icons.settings),
-              title: const Text('sobre o app'),
+              title: const Text('Sobre o app'),
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => Sobre()));
               },
