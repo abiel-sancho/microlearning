@@ -73,7 +73,10 @@ class _InicioScreenState extends State<InicioScreen> {
 
                 // Ao voltar, o aluno pode ter respondido questões: atualiza o painel.
                 if (mounted) setState(() => _recarga++);
-              } catch (e) {
+              } catch (e, st) {
+
+                debugPrint('Erro ao enviar foto: $e\n$st');
+                
                 if (!mounted) return;
                 ScaffoldMessenger.of(this.context).showSnackBar(
                   SnackBar(content: Text('Erro: $e')),

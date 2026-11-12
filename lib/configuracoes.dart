@@ -73,9 +73,9 @@ class _ConfiguracoesState extends State<Configuracoes>{
         UserAttributes(data: {'avatar_url': url}),
       );
 
-      if (mounted) {
+            if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível enviar a foto.')),
+          const SnackBar(content: Text('Foto de perfil atualizada!')),
         );
       }
     }

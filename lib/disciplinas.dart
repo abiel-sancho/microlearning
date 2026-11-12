@@ -128,6 +128,7 @@ class _DisciplinasState extends State<Disciplinas> {
   Widget build(BuildContext context) {
     return Scaffold(
       endDrawer: Drawer(
+
         child: StatefulBuilder(
           builder: (context, setDrawerState) {
             return StreamBuilder<List<Map<String, dynamic>>>(
@@ -266,13 +267,19 @@ class _DisciplinasState extends State<Disciplinas> {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        onTap: (index) {
-          if (index == 1) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => Configuracoes()),
-            );
-          }
-        },
+        onTap: (index) async {
+            if (index == 1) {
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => Configuracoes()),
+              );
+              // Ao voltar, relê a foto salva no perfil do usuário.
+              final url = Supabase.instance.client.auth.currentUser?.userMetadata?['avatar_url'];
+              if (!mounted) return;
+              if (url is String && url.isNotEmpty) {
+                setState(() => _avatarUrl = url);
+              }
+            }
+          },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Configurações"),
