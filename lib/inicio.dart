@@ -18,6 +18,11 @@ class _InicioScreenState extends State<InicioScreen> {
   // Mudar este número recria o painel de revisões, que busca os dados de novo.
   int _recarga = 0;
 
+  String get _nome {
+    final username = user?.userMetadata?['username'];
+    return username is String ? username.trim() : '';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,7 +33,7 @@ class _InicioScreenState extends State<InicioScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            'Bem-vindo',
+            _nome.isEmpty ? 'Bem-vindo(a)' : 'Bem-vindo(a), $_nome',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 28,
@@ -50,6 +55,7 @@ class _InicioScreenState extends State<InicioScreen> {
                 }
 
                 emailUser = user!.email;
+                
 
                 await Supabase.instance.client
                     .from('user_professor')

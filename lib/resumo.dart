@@ -50,7 +50,6 @@ class _ResumoState extends State<Resumo> {
             }
             else{
           final resumo = snapshot.data!;
-          // O campo "texto" pode vir nulo do banco (tópico sem conteúdo).
           final texto = (resumo[0]['texto'] ?? '').toString().trim();
 
           return Column(

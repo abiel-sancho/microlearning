@@ -229,7 +229,7 @@ class AppTema {
     );
   }
 
-  /// Estilo do texto em Markdown dos resumos: títulos em roxo/azul suaves.
+  /// Estilo do texto em Markdown
   static MarkdownStyleSheet markdown(BuildContext context) {
     final tema = Theme.of(context);
     final cores = tema.colorScheme;

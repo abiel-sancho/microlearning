@@ -41,6 +41,8 @@ class _LoginState extends State<Login> {
                 unexpectedError: 'Um erro inesperado aconteceu',
                 validEmailError: 'Digite um email válido'
                 ),
+              showConfirmPasswordField: true,
+              metadataFields: [MetaDataField(label: "Nome", key: 'username', prefixIcon: Icon(Icons.text_format))],
               onSignInComplete: (response) {
 
                   Navigator.push(

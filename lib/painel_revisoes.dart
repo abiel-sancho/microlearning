@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:testeapp/resumo.dart';
 import 'package:testeapp/revisao_service.dart';
 
-/// Painel da tela Início com os tópicos que o aluno deve revisar hoje
-/// (repetição espaçada). Tocar em um tópico abre o resumo; de lá o aluno vai
-/// para as questões, e o resultado agenda a próxima revisão.
+
 class PainelRevisoes extends StatefulWidget {
   const PainelRevisoes({super.key});
 
@@ -27,7 +25,7 @@ class _PainelRevisoesState extends State<PainelRevisoes> {
       context,
       MaterialPageRoute(builder: (context) => Resumo(idTopico: item.idTopico)),
     );
-    // Ao voltar, o aluno pode ter concluído a revisão: atualiza a lista.
+    // atualiza a lista de revisões marcadas pra hoej
     if (mounted) _recarregar();
   }
 

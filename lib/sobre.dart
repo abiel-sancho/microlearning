@@ -13,7 +13,7 @@ Future<void> _abrirLink() async {
 class Sobre extends StatelessWidget{
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: null,
+      appBar: AppBar(leading: IconButton(onPressed:() {Navigator.pop(context);}, icon: Icon(Icons.arrow_back)),),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
