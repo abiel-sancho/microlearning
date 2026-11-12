@@ -72,6 +72,7 @@ class _ConfiguracoesState extends State<Configuracoes>{
       await supabase.auth.updateUser(
         UserAttributes(data: {'avatar_url': url}),
       );
+      debugPrint('[foto] enviada e salva no perfil: $url');
 
             if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

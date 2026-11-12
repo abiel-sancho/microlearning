@@ -54,6 +54,7 @@ class _DisciplinasState extends State<Disciplinas> {
 
     // Funciona na web e no celular (não depende de File/path)
     final bytes = await pickedFile.readAsBytes();
+    debugPrint('[foto] escolhida: ${pickedFile.name} | tipo: ${pickedFile.mimeType} | ${bytes.length} bytes');
 
     // Mostra a foto na hora, antes do upload terminar
     setDrawerState(() {
@@ -93,6 +94,7 @@ class _DisciplinasState extends State<Disciplinas> {
         UserAttributes(data: {'avatar_url': url}),
       );
 
+      debugPrint('[foto] enviada e salva no perfil: $url');
       setDrawerState(() {
         _avatarUrl = url;
         _arquivoFoto = null; // agora usa a imagem da rede
@@ -157,6 +159,9 @@ class _DisciplinasState extends State<Disciplinas> {
                                   radius: 40,
                                   backgroundColor: Colors.grey[300],
                                   backgroundImage: _arquivoFoto != null ? MemoryImage(_arquivoFoto!) : (_avatarUrl != null ? NetworkImage(_avatarUrl!) : null) as ImageProvider?,
+                                  onBackgroundImageError: (_arquivoFoto != null || _avatarUrl != null)
+                                      ? (erro, pilha) => debugPrint('[foto] falha ao carregar a imagem ($_avatarUrl): $erro')
+                                      : null,
                                   child: (_arquivoFoto == null && _avatarUrl == null) ? const Icon(Icons.person, size: 40, color: Colors.grey,)
                                       : null,
                                 ),
