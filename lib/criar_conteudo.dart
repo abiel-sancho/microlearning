@@ -1,11 +1,14 @@
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-//import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/conversao.dart';
 import 'package:testeapp/criar_questao.dart';
 import 'package:testeapp/tema.dart';
+import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
+import 'package:cross_file/cross_file.dart';
+//import 'dart:js_interop';
 
 class CriarConteudoScreen extends StatefulWidget {
   const CriarConteudoScreen({super.key});
@@ -14,8 +17,11 @@ class CriarConteudoScreen extends StatefulWidget {
   State<CriarConteudoScreen> createState() => _CriarConteudoScreenState();
 }
 
+
 class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
+
   late QuillController _controller;
+
   final TextEditingController _tituloController = TextEditingController();
   User? user;
   Supabase? supabase;
@@ -27,6 +33,14 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
 
     return response;
   }
+
+  void insertImage(QuillController controller, String url) {
+  final sel = controller.selection;
+  final index = sel.start < 0 ? controller.document.length - 1 : sel.start;
+
+  controller.replaceText(index, sel.end - sel.start, BlockEmbed.image(url), null);
+  controller.moveCursorToPosition(index + 1);
+}
 
   String? _selectedValue;
 
@@ -50,7 +64,29 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
     super.dispose();
   }
 
+
+  Future<String> uploadImageToSupabase(String caminho) async {
+
+  if (caminho.startsWith('http')) return caminho;
+
+  final bytes = await XFile(caminho).readAsBytes();
+
+  final ehPng = bytes.length > 4 && bytes[0] == 0x89 && bytes[1] == 0x50;
+  final ext = ehPng ? 'png' : 'jpg';
+
+  final nome = '${user!.id}/${DateTime.now().millisecondsSinceEpoch}.$ext';
+  final storage = Supabase.instance.client.storage.from('imagens_resumos');
+
+  await storage.uploadBinary(
+    nome,
+    bytes,
+    fileOptions: FileOptions(contentType: ehPng ? 'image/png' : 'image/jpeg'),
+  );
+
+  return storage.getPublicUrl(nome);
+}
   @override
+  
   Widget build(BuildContext context) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: fetchDropdownData(),
@@ -106,6 +142,25 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                   QuillSimpleToolbar(
                     controller: _controller,
                     config: QuillSimpleToolbarConfig(
+                      embedButtons: FlutterQuillEmbeds.toolbarButtons(
+                        imageButtonOptions: QuillToolbarImageButtonOptions(
+                          imageButtonConfig: QuillToolbarImageConfig(
+                            onImageInsertCallback: (image, controller) async {
+                              try {
+                                final url = await uploadImageToSupabase(image);
+                                insertImage(controller, url);
+                              } catch (e) {
+                                log('Erro ao enviar imagem: $e');
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Erro ao enviar imagem: $e')),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+      ),
+                      ),
                       showBackgroundColorButton: false,
                       showAlignmentButtons: false,
                       showFontFamily: false,
@@ -128,6 +183,8 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                           controller: _controller,
                           focusNode: FocusNode(),
                           scrollController: ScrollController(),
+                          config: QuillEditorConfig(
+                            embedBuilders: kIsWeb ? FlutterQuillEmbeds.editorWebBuilders() : FlutterQuillEmbeds.editorBuilders(),)
                         ),
                       ),
                     ),
@@ -242,6 +299,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                 }
 
                 log("Markdown gerado: $markdownFinal");
+                print(markdownFinal);
 
 
                 if (mounted) {

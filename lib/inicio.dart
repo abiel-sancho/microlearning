@@ -19,7 +19,7 @@ class _InicioScreenState extends State<InicioScreen> {
   int _recarga = 0;
 
   String get _nome {
-    final username = user?.userMetadata?['username'];
+    final username = Supabase.instance.client.auth.currentUser?.userMetadata?['username'];
     return username is String ? username.trim() : '';
   }
 

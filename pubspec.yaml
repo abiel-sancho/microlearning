@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   
+  cross_file: 
   image_picker: ^1.1.2
   
   url_launcher: ^6.3.1
@@ -47,6 +48,7 @@ dependencies:
   #delta_markdown: ^0.8.0
   flutter_localizations:
     sdk: flutter
+  flutter_quill_extensions: ^11.0.0
 
 dev_dependencies:
 
