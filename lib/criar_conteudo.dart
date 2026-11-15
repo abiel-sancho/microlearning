@@ -143,6 +143,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                     controller: _controller,
                     config: QuillSimpleToolbarConfig(
                       embedButtons: FlutterQuillEmbeds.toolbarButtons(
+                        videoButtonOptions: null,
                         imageButtonOptions: QuillToolbarImageButtonOptions(
                           imageButtonConfig: QuillToolbarImageConfig(
                             onImageInsertCallback: (image, controller) async {
@@ -172,6 +173,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
                       showInlineCode: false,
                       showCodeBlock: false,
                       showStrikeThrough: false,
+                      
                     ),
                   ),
                     Padding(

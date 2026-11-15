@@ -10,6 +10,7 @@ import 'package:testeapp/icones_disciplina.dart';
 import 'package:testeapp/cores_disciplina.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+import 'package:testeapp/favoritos.dart';
 
 class Disciplinas extends StatefulWidget {
   Disciplinas({super.key});
@@ -243,6 +244,7 @@ class _DisciplinasState extends State<Disciplinas> {
                       onTap: () {
                         setState(() {
                           selectedPage = 'Settings';
+                          Navigator.pop(context);
                         });
                       },
                     ),
@@ -284,6 +286,11 @@ class _DisciplinasState extends State<Disciplinas> {
               if (url is String && url.isNotEmpty) {
                 setState(() => _avatarUrl = url);
               }
+            }
+            if (index == 2) {
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const Favoritos()),
+              );
             }
           },
         items: const [

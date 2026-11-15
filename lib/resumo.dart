@@ -4,6 +4,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:testeapp/cores_disciplina.dart';
 import 'package:testeapp/questoes_aluno.dart';
 import 'package:testeapp/tema.dart';
+import 'package:testeapp/favoritos_service.dart';
 
 
 class Resumo extends StatefulWidget {
@@ -23,6 +24,30 @@ class Resumo extends StatefulWidget {
 
 
 class _ResumoState extends State<Resumo> {
+
+    bool _favorito = false;
+
+  @override
+  void initState() {
+    super.initState();
+    FavoritosService.ehFavorito(widget.idTopico).then((valor) {
+      if (mounted) setState(() => _favorito = valor);
+    }).catchError((_) {});
+  }
+
+  Future<void> _alternarFavorito() async {
+    final novo = !_favorito;
+    setState(() => _favorito = novo); // mostra na hora
+    try {
+      await FavoritosService.definir(widget.idTopico, favorito: novo);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _favorito = !novo); // desfaz se falhou
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível atualizar os favoritos: $e')),
+      );
+    }
+  }
 
   late final _resumoStream = Supabase.instance.client
     .from('topico')
@@ -50,8 +75,17 @@ class _ResumoState extends State<Resumo> {
         return Theme(
           data: tema,
           child: Scaffold (
-      appBar: AppBar(leading: IconButton(onPressed:() {Navigator.pop(context);}, icon: Icon(Icons.arrow_back)),
-      title: Text((topicoSnapshot.data?['nome'] ?? '').toString()),),
+      appBar: AppBar(
+        leading: IconButton(onPressed:() {Navigator.pop(context);}, icon: Icon(Icons.arrow_back)),
+        title: Text((topicoSnapshot.data?['nome'] ?? '').toString()),
+        actions: [
+          IconButton(
+            tooltip: _favorito ? 'Remover dos favoritos' : 'Favoritar',
+            icon: Icon(_favorito ? Icons.favorite : Icons.favorite_border),
+            onPressed: _alternarFavorito,
+          ),
+        ],
+      ),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _resumoStream,
         builder: (context, snapshot) {
