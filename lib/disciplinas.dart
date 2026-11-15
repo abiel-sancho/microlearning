@@ -359,7 +359,7 @@ class _DisciplinasState extends State<Disciplinas> {
                                       color: cor.sobrePrincipal,
                                       fontWeight: FontWeight.w700,
                                       fontFamily: 'Montserrat',
-                                      fontSize: 30
+                                      fontSize: 23
                                     ),
                               ),
                             ),

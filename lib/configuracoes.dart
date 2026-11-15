@@ -157,7 +157,7 @@ class _ConfiguracoesState extends State<Configuracoes>{
               child: Row(
                 
                 children: [
-                  Text('Alterar foto de perfil',style: TextStyle(fontSize: 28),),
+                  Text('Alterar foto de perfil',style: TextStyle(fontSize: 24),),
                   Spacer(),
                   Icon(Icons.camera_alt)
                 ],
@@ -174,7 +174,7 @@ class _ConfiguracoesState extends State<Configuracoes>{
               child: Row(
                 
                 children: [
-                  Text('Alterar nome de usuário',style: TextStyle(fontSize: 28),),
+                  Text('Alterar nome de usuário',style: TextStyle(fontSize: 24),),
                   Spacer(),
                   Icon(Icons.person)
                 ],
@@ -195,7 +195,7 @@ class _ConfiguracoesState extends State<Configuracoes>{
               child: Row(
                 
                 children: [
-                  Text('Mudar tema',style: TextStyle(fontSize: 28),),
+                  Text('Mudar tema',style: TextStyle(fontSize: 24),),
                   Spacer(),
                   Icon(Icons.lightbulb)
                 ],
