@@ -27,7 +27,7 @@ class _InicioScreenState extends State<InicioScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Início'),
+        title: const Text('Início', style: TextStyle(fontFamily: 'Shameimaru', fontSize: 30)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:image_picker/image_picker.dart';
+import 'package:testeapp/tema.dart';
+
 
 class Configuracoes extends StatefulWidget{
   const Configuracoes({super.key});
@@ -139,6 +139,9 @@ class _ConfiguracoesState extends State<Configuracoes>{
   @override
   
   Widget build(BuildContext context) {
+
+    final escuro = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title:Text('Configurações'),
@@ -165,7 +168,7 @@ class _ConfiguracoesState extends State<Configuracoes>{
           Divider(),
 
           GestureDetector(
-            onTap: () => _alterarNome,
+            onTap: () => _alterarNome(),
             child: Padding(
               padding: EdgeInsetsGeometry.fromLTRB(30, 10, 30, 10),
               child: Row(
@@ -174,6 +177,27 @@ class _ConfiguracoesState extends State<Configuracoes>{
                   Text('Alterar nome de usuário',style: TextStyle(fontSize: 28),),
                   Spacer(),
                   Icon(Icons.person)
+                ],
+              ),
+            ),
+          ),
+
+          Divider(),
+
+          GestureDetector(
+            onTap: () {
+              AppTema.modo.value =
+                  escuro ? ThemeMode.light : ThemeMode.dark;
+                  setState(() {});
+            },
+            child: Padding(
+              padding: EdgeInsetsGeometry.fromLTRB(30, 10, 30, 10),
+              child: Row(
+                
+                children: [
+                  Text('Mudar tema',style: TextStyle(fontSize: 28),),
+                  Spacer(),
+                  Icon(Icons.lightbulb)
                 ],
               ),
             ),

@@ -7,7 +7,7 @@ import 'package:testeapp/topicos.dart';
 import 'package:testeapp/tema.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/icones_disciplina.dart';
-
+import 'package:testeapp/cores_disciplina.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 
@@ -157,12 +157,12 @@ class _DisciplinasState extends State<Disciplinas> {
                               children: [
                                 CircleAvatar(
                                   radius: 40,
-                                  backgroundColor: Colors.grey[300],
+                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                                   backgroundImage: _arquivoFoto != null ? MemoryImage(_arquivoFoto!) : (_avatarUrl != null ? NetworkImage(_avatarUrl!) : null) as ImageProvider?,
                                   onBackgroundImageError: (_arquivoFoto != null || _avatarUrl != null)
                                       ? (erro, pilha) => debugPrint('[foto] falha ao carregar a imagem ($_avatarUrl): $erro')
                                       : null,
-                                  child: (_arquivoFoto == null && _avatarUrl == null) ? const Icon(Icons.person, size: 40, color: Colors.grey,)
+                                  child: (_arquivoFoto == null && _avatarUrl == null) ? Icon(Icons.person, size: 40, color: Theme.of(context).colorScheme.tertiary)
                                       : null,
                                 ),
                                 if (_enviando)
@@ -210,7 +210,7 @@ class _DisciplinasState extends State<Disciplinas> {
                     Visibility(
                       visible: acesso,
                       child: ListTile(
-                        leading: const Icon(Icons.message),
+                        leading: const Icon(Icons.text_snippet_rounded),
                         title: const Text('Inserir microconteúdo'),
                         onTap: () {
                           Navigator.push(
@@ -238,7 +238,7 @@ class _DisciplinasState extends State<Disciplinas> {
                       ),
                     ),
                     ListTile(
-                      leading: const Icon(Icons.settings),
+                      leading: const Icon(Icons.list),
                       title: const Text('Disciplinas'),
                       onTap: () {
                         setState(() {
@@ -247,7 +247,7 @@ class _DisciplinasState extends State<Disciplinas> {
                       },
                     ),
                     ListTile(
-                      leading: const Icon(Icons.settings),
+                      leading: const Icon(Icons.info),
                       title: const Text('Sobre o app'),
                       onTap: () {
                         Navigator.push(
@@ -270,6 +270,7 @@ class _DisciplinasState extends State<Disciplinas> {
           },
           icon: const Icon(Icons.arrow_back),
         ),
+        title: Text('Selecione uma disciplina', style:TextStyle(fontFamily: 'Shameimaru', fontSize: 20))
       ),
       bottomNavigationBar: BottomNavigationBar(
         onTap: (index) async {
@@ -312,21 +313,20 @@ class _DisciplinasState extends State<Disciplinas> {
                   ),
                   itemCount: disciplina.length,
                   itemBuilder: (context, index) {
+                    // Cada disciplina tem sempre a mesma cor (definida pelo id dela).
+                    final cor = corDaDisciplina(disciplina[index]['id']);
                     return GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => Topicos(
-                              idDisciplina: disciplina[index]['id'].toString(),
-                            ),
-                          ),
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => Topicos
+                          (idDisciplina: disciplina[index]['id'].toString(),),),
                         );
                       },
                       child: Container(
                         decoration: AppTema.cartao(
                           context,
-                          cor: Theme.of(context).colorScheme.secondaryContainer,
+                          cor: cor.principal,
+                          borda: cor.principal,
+
                         ),
                         padding: const EdgeInsets.all(8),
                         child: Column(
@@ -334,6 +334,11 @@ class _DisciplinasState extends State<Disciplinas> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            Icon(
+                              iconeDaDisciplina(disciplina[index]),
+                              size: 100,
+                              color: cor.sobrePrincipal.withValues(alpha: 0.85),
+                            ),
                             Flexible(
                               child: Text(
                                 disciplina[index]['nome'],
@@ -344,19 +349,12 @@ class _DisciplinasState extends State<Disciplinas> {
                                     .textTheme
                                     .titleSmall
                                     ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSecondaryContainer,
+                                      color: cor.sobrePrincipal,
+                                      fontWeight: FontWeight.w700,
+                                      fontFamily: 'Montserrat',
+                                      fontSize: 30
                                     ),
                               ),
-                            ),
-                            Icon(
-                              iconeDaDisciplina(disciplina[index]),
-                              size: 100,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .secondary
-                                  .withValues(alpha: 0.6),
                             ),
                           ],
                         ),

@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:testeapp/cores_disciplina.dart';
 import 'package:testeapp/questoes_aluno.dart';
 import 'package:testeapp/tema.dart';
 
 
 class Resumo extends StatefulWidget {
 
-  const Resumo ({super.key, required this.idTopico});
+  const Resumo ({super.key, required this.idTopico, this.idDisciplina});
 
   final String idTopico;
+
+  /// Só serve para escolher a cor da tela. Quando a tela é aberta sem ela (pelo
+  /// painel de revisões do início, por exemplo), a disciplina do tópico é
+  /// descoberta junto com o nome.
+  final String? idDisciplina;
 
   @override
   State<Resumo> createState() => _ResumoState();
@@ -17,7 +23,7 @@ class Resumo extends StatefulWidget {
 
 
 class _ResumoState extends State<Resumo> {
-  
+
   late final _resumoStream = Supabase.instance.client
     .from('topico')
     .stream(primaryKey: ['id'])
@@ -25,20 +31,27 @@ class _ResumoState extends State<Resumo> {
 
   late final Future<Map<String, dynamic>> _topicoFuture = Supabase.instance.client
       .from('topico')
-      .select('nome')
+      .select('nome, id_disciplina')
       .eq('id', widget.idTopico)
       .single();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold (
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _topicoFuture,
+      builder: (context, topicoSnapshot) {
+        // A tela usa a cor da disciplina a que o tópico pertence.
+        final idDisciplina = widget.idDisciplina ?? topicoSnapshot.data?['id_disciplina'];
+        final tema = idDisciplina == null
+            ? Theme.of(context)
+            : AppTema.daDisciplina(corDaDisciplina(idDisciplina),
+              escuro: Theme.of(context).brightness == Brightness.dark,);
+              
+        return Theme(
+          data: tema,
+          child: Scaffold (
       appBar: AppBar(leading: IconButton(onPressed:() {Navigator.pop(context);}, icon: Icon(Icons.arrow_back)),
-      title: FutureBuilder<Map<String, dynamic>>(
-        future: _topicoFuture,
-        builder: (context, snapshot) {
-          return Text((snapshot.data?['nome'] ?? '').toString());
-        },
-      ),),
+      title: Text((topicoSnapshot.data?['nome'] ?? '').toString()),),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _resumoStream,
         builder: (context, snapshot) {
@@ -87,6 +100,9 @@ class _ResumoState extends State<Resumo> {
           }
         },
       ),
+          ),
+        );
+      },
     );
   }
 }

@@ -108,5 +108,13 @@ flutter:
       fonts:
         - asset: assets/fonts/MarkoOne-Regular.ttf
 
+    - family: Shameimaru
+      fonts:
+        - asset: assets/fonts/ShameimaruSans-9VX0.ttf
+    
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/MontserratBlack-3zOvZ.ttf
+
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package

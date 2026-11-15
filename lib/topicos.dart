@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/resumo.dart';
 import 'package:testeapp/tema.dart';
+import 'package:testeapp/cores_disciplina.dart';
 
 
 class Topicos extends StatefulWidget {
@@ -24,7 +25,12 @@ class _TopicosState extends State<Topicos> {
   @override
 
     Widget build(BuildContext context) {
-    return Scaffold(
+    // A tela inteira usa a cor da disciplina (a mesma do cartão dela).
+    return Theme(
+      data: AppTema.daDisciplina(corDaDisciplina(widget.idDisciplina),
+        escuro: Theme.of(context).brightness == Brightness.dark,),
+        
+      child: Scaffold(
       appBar: AppBar(leading: IconButton(onPressed:() {Navigator.pop(context);}, icon: Icon(Icons.arrow_back)),),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _topicoStream,
@@ -50,17 +56,21 @@ class _TopicosState extends State<Topicos> {
                   return 
                     GestureDetector(
                       onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => Resumo(idTopico: topico[index]['id'].toString())));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => Resumo(idTopico: topico[index]['id'].toString(), idDisciplina: widget.idDisciplina)));
                     },
                       child: Container(
-                        decoration: AppTema.cartao(context),
+                        decoration: AppTema.cartao(
+                          context,
+                          cor: Theme.of(context).colorScheme.primaryContainer,
+                          borda: Theme.of(context).colorScheme.primary,
+                        ),
                         padding: const EdgeInsets.all(8),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Flexible(child: Text(topico[index]['nome'], textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis)),
+                            Flexible(child: Text(topico[index]['nome'], textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600))),
                           ],
                         ),
                       ),
@@ -72,6 +82,7 @@ class _TopicosState extends State<Topicos> {
           );
         },
       ),
+    ),
     );
   }
 }
