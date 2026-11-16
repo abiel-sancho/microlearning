@@ -325,7 +325,7 @@ class _DisciplinasState extends State<Disciplinas> {
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(context, MaterialPageRoute(builder: (context) => Topicos
-                          (idDisciplina: disciplina[index]['id'].toString(),),),
+                          (idDisciplina: disciplina[index]['id'].toString(), nomeDisciplina: disciplina[index]['nome'].toString()),),
                         );
                       },
                       child: Container(

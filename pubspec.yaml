@@ -20,12 +20,12 @@ version: 1.0.0+1
 
 flutter_native_splash:
   color: "#4e18a6" 
-  image: "assets/icon/logoapp.png" 
+  image: "assets/icon/splashapp.png" 
 
 
   android_12:
     color: "##4e18a6"
-    image: "assets/icon/logoapp.png"
+    image: "assets/icon/splashapp.png"
 
 environment:
   sdk: ^3.8.1
