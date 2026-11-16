@@ -24,7 +24,7 @@ class AppTema {
   static const ColorScheme _cores = ColorScheme(
     brightness: Brightness.light,
     // Roxo vivo: barras do topo, botões e destaques.
-    primary: Color.fromARGB(255, 78, 24, 166),
+    primary: Color.fromARGB(255, 105, 18, 205),
     onPrimary: Color(0xFFFFFFFF),
     primaryContainer: Color(0xFFEDE4FF),
     onPrimaryContainer: Color(0xFF2A0A6B),

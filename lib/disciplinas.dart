@@ -272,7 +272,7 @@ class _DisciplinasState extends State<Disciplinas> {
           },
           icon: const Icon(Icons.arrow_back),
         ),
-        title: Text('Selecione uma disciplina', style:TextStyle(fontFamily: 'Shameimaru', fontSize: 20))
+        title: Text('Selecione uma disciplina', style:TextStyle(fontFamily: 'Shameimaru', fontSize: 18))
       ),
       bottomNavigationBar: BottomNavigationBar(
         onTap: (index) async {
