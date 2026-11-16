@@ -357,9 +357,9 @@ class _DisciplinasState extends State<Disciplinas> {
                                     .titleSmall
                                     ?.copyWith(
                                       color: cor.sobrePrincipal,
-                                      fontWeight: FontWeight.w700,
-                                      fontFamily: 'Montserrat',
-                                      fontSize: 23
+                                      fontWeight: FontWeight.w900,
+                                      fontFamily: 'MontserratMedium',
+                                      fontSize: 30
                                     ),
                               ),
                             ),

@@ -127,5 +127,13 @@ flutter:
       fonts:
         - asset: assets/fonts/MontserratBlack-3zOvZ.ttf
 
+    - family: MontserratLight
+      fonts:
+        - asset: assets/fonts/MontserratLight-ywBvq.ttf
+    
+    - family: MontserratMedium
+      fonts:
+        - asset: assets/fonts/MontserratMedium-nRxlJ.ttf
+
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
