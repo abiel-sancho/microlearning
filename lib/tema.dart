@@ -168,6 +168,7 @@ class AppTema {
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: cores.onPrimary,
+          fontFamily: 'Shameimaru'
         ),
       ),
       cardTheme: CardThemeData(

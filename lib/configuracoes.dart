@@ -150,6 +150,7 @@ class _ConfiguracoesState extends State<Configuracoes>{
       ),
       body: Column(
         children: [
+          SizedBox(height: 20),
           GestureDetector(
             onTap: () => _pickImage(),
             child: Padding(
