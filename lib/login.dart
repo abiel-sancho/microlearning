@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 //import 'package:testeapp/registrar.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 import 'package:testeapp/inicio.dart';
-import 'package:testeapp/tema.dart';
+//import 'package:testeapp/tema.dart';
 //import 'package:supabase_flutter/supabase_flutter.dart';
 
 
