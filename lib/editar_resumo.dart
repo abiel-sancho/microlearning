@@ -1,6 +1,9 @@
 import 'dart:developer';
+import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/conversao.dart';
 import 'package:testeapp/tema.dart';
@@ -65,6 +68,42 @@ class _EditarResumoScreenState extends State<EditarResumoScreen> {
         .from('disciplina')
         .select('id, nome')
         .order('nome', ascending: true);
+  }
+
+  void insertImage(QuillController controller, String url) {
+    final sel = controller.selection;
+    final index = sel.start < 0 ? controller.document.length - 1 : sel.start;
+
+    controller.replaceText(
+      index,
+      sel.end - sel.start,
+      BlockEmbed.image(url),
+      null,
+    );
+    controller.moveCursorToPosition(index + 1);
+  }
+
+  Future<String> uploadImageToSupabase(String caminho) async {
+    if (caminho.startsWith('http')) return caminho;
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) throw StateError('Usuário não logado.');
+
+    final bytes = await XFile(caminho).readAsBytes();
+
+    final ehPng = bytes.length > 4 && bytes[0] == 0x89 && bytes[1] == 0x50;
+    final ext = ehPng ? 'png' : 'jpg';
+
+    final nome = '${user.id}/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final storage = Supabase.instance.client.storage.from('imagens_resumos');
+
+    await storage.uploadBinary(
+      nome,
+      bytes,
+      fileOptions: FileOptions(contentType: ehPng ? 'image/png' : 'image/jpeg'),
+    );
+
+    return storage.getPublicUrl(nome);
   }
 
   @override
@@ -160,7 +199,29 @@ class _EditarResumoScreenState extends State<EditarResumoScreen> {
               ),
               QuillSimpleToolbar(
                 controller: _controller!,
-                config: const QuillSimpleToolbarConfig(
+                config: QuillSimpleToolbarConfig(
+                  embedButtons: FlutterQuillEmbeds.toolbarButtons(
+                    videoButtonOptions: null,
+                    imageButtonOptions: QuillToolbarImageButtonOptions(
+                      imageButtonConfig: QuillToolbarImageConfig(
+                        onImageInsertCallback: (image, controller) async {
+                          try {
+                            final url = await uploadImageToSupabase(image);
+                            insertImage(controller, url);
+                          } catch (e) {
+                            log('Erro ao enviar imagem: $e');
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erro ao enviar imagem: $e'),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  ),
                   showBackgroundColorButton: false,
                   showAlignmentButtons: false,
                   showFontFamily: false,
@@ -184,6 +245,11 @@ class _EditarResumoScreenState extends State<EditarResumoScreen> {
                       controller: _controller!,
                       focusNode: FocusNode(),
                       scrollController: ScrollController(),
+                      config: QuillEditorConfig(
+                        embedBuilders: kIsWeb
+                            ? FlutterQuillEmbeds.editorWebBuilders()
+                            : FlutterQuillEmbeds.editorBuilders(),
+                      ),
                     ),
                   ),
                 ),
