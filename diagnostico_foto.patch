@@ -1,0 +1,61 @@
+From 3a9c5f86a172a6c0f2d4e98b07ddf6bf030da4f8 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 12 Nov 2026 18:46:09 -0300
+Subject: [PATCH] =?UTF-8?q?Diagn=C3=B3stico=20do=20fluxo=20da=20foto=20de?=
+ =?UTF-8?q?=20perfil?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012MYmRU6ZzuPEtiQdfxFELz
+---
+ lib/configuracoes.dart | 1 +
+ lib/disciplinas.dart   | 5 +++++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/lib/configuracoes.dart b/lib/configuracoes.dart
+index e337a56..8307912 100644
+--- a/lib/configuracoes.dart
++++ b/lib/configuracoes.dart
+@@ -72,6 +72,7 @@ class _ConfiguracoesState extends State<Configuracoes>{
+       await supabase.auth.updateUser(
+         UserAttributes(data: {'avatar_url': url}),
+       );
++      debugPrint('[foto] enviada e salva no perfil: $url');
+ 
+             if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+diff --git a/lib/disciplinas.dart b/lib/disciplinas.dart
+index 39566b8..767a3a0 100644
+--- a/lib/disciplinas.dart
++++ b/lib/disciplinas.dart
+@@ -54,6 +54,7 @@ class _DisciplinasState extends State<Disciplinas> {
+ 
+     // Funciona na web e no celular (não depende de File/path)
+     final bytes = await pickedFile.readAsBytes();
++    debugPrint('[foto] escolhida: ${pickedFile.name} | tipo: ${pickedFile.mimeType} | ${bytes.length} bytes');
+ 
+     // Mostra a foto na hora, antes do upload terminar
+     setDrawerState(() {
+@@ -93,6 +94,7 @@ class _DisciplinasState extends State<Disciplinas> {
+         UserAttributes(data: {'avatar_url': url}),
+       );
+ 
++      debugPrint('[foto] enviada e salva no perfil: $url');
+       setDrawerState(() {
+         _avatarUrl = url;
+         _arquivoFoto = null; // agora usa a imagem da rede
+@@ -157,6 +159,9 @@ class _DisciplinasState extends State<Disciplinas> {
+                                   radius: 40,
+                                   backgroundColor: Colors.grey[300],
+                                   backgroundImage: _arquivoFoto != null ? MemoryImage(_arquivoFoto!) : (_avatarUrl != null ? NetworkImage(_avatarUrl!) : null) as ImageProvider?,
++                                  onBackgroundImageError: (_arquivoFoto != null || _avatarUrl != null)
++                                      ? (erro, pilha) => debugPrint('[foto] falha ao carregar a imagem ($_avatarUrl): $erro')
++                                      : null,
+                                   child: (_arquivoFoto == null && _avatarUrl == null) ? const Icon(Icons.person, size: 40, color: Colors.grey,)
+                                       : null,
+                                 ),
+-- 
+2.43.0
+

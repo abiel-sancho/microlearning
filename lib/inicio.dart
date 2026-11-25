@@ -19,7 +19,7 @@ class _InicioScreenState extends State<InicioScreen> {
   int _recarga = 0;
 
   String get _nome {
-    final username = user?.userMetadata?['username'];
+    final username = Supabase.instance.client.auth.currentUser?.userMetadata?['username'];
     return username is String ? username.trim() : '';
   }
 
@@ -27,7 +27,7 @@ class _InicioScreenState extends State<InicioScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Início'),
+        title: const Text('Início', style: TextStyle(fontFamily: 'Shameimaru', fontSize: 30)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),

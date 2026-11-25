@@ -170,7 +170,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
               'Este tópico ainda não tem questões.',
               acao: FilledButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Voltar ao resumo'),
+                child: FittedBox(fit: BoxFit.fitWidth, child: const Text('Voltar ao resumo')),
               ),
             );
           }

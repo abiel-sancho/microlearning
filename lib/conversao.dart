@@ -5,20 +5,29 @@ class Conversao {
     StringBuffer markdown = StringBuffer();
 
     for (int i = 0; i < delta.length; i++) {
-      var op = delta[i];
+      final op = delta[i];
       if (op is! Map || !op.containsKey('insert')) continue;
 
-      String text = op['insert'];
-      Map<String, dynamic>? attrs = op['attributes'];
+      final insert = op['insert'];
+      final attrs = (op['attributes'] as Map?)?.cast<String, dynamic>();
 
-      // Lógica para Atributos de Linha (Headers e Listas)
+      // Embed (imagem): o insert é um Map
+      if (insert is Map) {
+        final image = insert['image'];
+        if (image is String) markdown.write('![]($image)');
+        continue;
+      }
+      if (insert is! String) continue;
+
+      String text = insert;
+
+      // Atributos de linha (headers e listas)
       if (text == '\n' && attrs != null) {
-        String currentContent = markdown.toString();
-        List<String> lines = currentContent.split('\n');
+        final lines = markdown.toString().split('\n');
         String lastLine = lines.isNotEmpty ? lines.removeLast() : "";
 
         if (attrs.containsKey('header')) {
-          int level = attrs['header'];
+          final level = attrs['header'] as int;
           lastLine = "${'#' * level} $lastLine";
         } else if (attrs['list'] == 'ordered') {
           lastLine = "1. $lastLine";
@@ -32,7 +41,7 @@ class Conversao {
         continue;
       }
 
-      // Lógica para Atributos de Texto (Bold, Italic)
+      // Atributos de texto (negrito, itálico)
       if (attrs != null && text.trim().isNotEmpty) {
         if (attrs['bold'] == true) text = "**$text**";
         if (attrs['italic'] == true) text = "*$text*";
@@ -43,7 +52,6 @@ class Conversao {
     return markdown.toString();
   }
 
-  /// Converte Markdown de volta para Delta (Document)
   static Document markdownToDeltaDoc(String markdown) {
     if (markdown.trim().isEmpty) {
       return Document()..insert(0, '\n');
@@ -54,9 +62,16 @@ class Conversao {
 
     for (int i = 0; i < lines.length; i++) {
       String line = lines[i];
-      
-      // Remove quebras de linhas vazias no final se não houver texto
+
       if (line.isEmpty) {
+        deltaJson.add({"insert": "\n"});
+        continue;
+      }
+
+      // Imagem em linha própria: ![](url)
+      final imageMatch = RegExp(r'^!\[.*?\]\((.+?)\)$').firstMatch(line.trim());
+      if (imageMatch != null) {
+        deltaJson.add({"insert": {"image": imageMatch.group(1)}});
         deltaJson.add({"insert": "\n"});
         continue;
       }
@@ -64,7 +79,6 @@ class Conversao {
       Map<String, dynamic>? lineAttributes;
       String cleanLine = line;
 
-      // Verifica formatações de linha básicas que geramos antes
       if (line.startsWith('# ')) {
         cleanLine = line.substring(2);
         lineAttributes = {"header": 1};
@@ -82,10 +96,8 @@ class Conversao {
         lineAttributes = {"list": "ordered"};
       }
 
-      // Adiciona o texto puro
       deltaJson.add({"insert": cleanLine});
-      
-      // O Quill precisa que os atributos de linha fiquem no '\n' após o texto
+
       if (lineAttributes != null) {
         deltaJson.add({"insert": "\n", "attributes": lineAttributes});
       } else {

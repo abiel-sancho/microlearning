@@ -5,6 +5,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:testeapp/login.dart';
 import 'package:testeapp/tema.dart';
 
+
 void main() async {
 
   await Supabase.initialize(
@@ -20,19 +21,29 @@ class MyApp extends StatelessWidget {
 
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      localizationsDelegates: const [
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-    FlutterQuillLocalizations.delegate,
-  ],
-      debugShowCheckedModeBanner: false,
-      title: 'Microlearning',
 
-      theme: AppTema.claro,
-      home: Login(),
+  
+  Widget build(BuildContext context) {
+
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: AppTema.modo,
+      builder: (context, modoAtual, _) {
+        return MaterialApp(
+          localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        FlutterQuillLocalizations.delegate,
+      ],
+          debugShowCheckedModeBanner: false,
+          title: 'Microlearning',
+
+          theme: AppTema.claro,
+          darkTheme: AppTema.escuro,
+          themeMode: modoAtual,
+          home: Login(),
+        );
+      }
     );
   }
 }

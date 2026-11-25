@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/editar_resumo.dart';
 import 'package:testeapp/tema.dart';
+import 'package:testeapp/cores_disciplina.dart';
 
 class MeusResumos extends StatefulWidget {
   const MeusResumos({super.key});
@@ -22,6 +23,23 @@ class _MinhasState extends State<MeusResumos> {
   
 
   final supabase = Supabase.instance.client;
+
+  // Nome de cada disciplina (id -> nome), mostrado acima do nome do tópico.
+  Map<String, String> _nomesDisciplinas = {};
+
+  Future<void> _carregarNomesDisciplinas() async {
+    try {
+      final dados = await supabase.from('disciplina').select('id, nome');
+      if (!mounted) return;
+      setState(() {
+        _nomesDisciplinas = {
+          for (final d in dados) d['id'].toString(): (d['nome'] ?? '').toString(),
+        };
+      });
+    } catch (_) {
+      // Sem o nome da disciplina, o tile só mostra o nome do tópico.
+    }
+  }
 
     // deleta o resumo
   Future<void> deletarItem(int idParaDeletar) async {
@@ -44,6 +62,7 @@ class _MinhasState extends State<MeusResumos> {
   void initState() {
     super.initState();
     user = Supabase.instance.client.auth.currentUser;
+    _carregarNomesDisciplinas();
   }
 
   @override
@@ -68,10 +87,15 @@ class _MinhasState extends State<MeusResumos> {
                     crossAxisCount: 1,
                     mainAxisSpacing: 10.0,
                     crossAxisSpacing: 10.0,
-                    childAspectRatio: 8.0,
+                    mainAxisExtent: 80, // altura fixa: cabe a disciplina + o nome do tópico
                   ),
                   itemCount: topico.length,
                   itemBuilder: (context, index) {
+                    final nomeDisciplina = _nomesDisciplinas[topico[index]['id_disciplina'].toString()] ?? '';
+                     final cores = AppTema.daDisciplina(
+                      corDaDisciplina(topico[index]['id_disciplina']),
+                      escuro: Theme.of(context).brightness == Brightness.dark,
+                    ).colorScheme;
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -82,21 +106,40 @@ class _MinhasState extends State<MeusResumos> {
                         );
                       },
                       child: Container(
-                        decoration: AppTema.cartao(context),
+                          decoration: AppTema.cartao(
+                          context,
+                          cor: cores.primaryContainer,
+                          borda: cores.primary,
+                        ),
                         padding: const EdgeInsets.all(8),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                                Flexible(
-                                  child: Text(
+                                Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Disciplina a que o tópico pertence.
+                                  if (nomeDisciplina.isNotEmpty)
+                                    Text(
+                                      nomeDisciplina,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                            color: cores.tertiary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                  Text(
                                     topico[index]['nome'],
-                                    textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(color: cores.onPrimaryContainer, fontWeight: FontWeight.w600),
                                   ),
-                                ),
-
-                            Spacer(),
+                                ],
+                              ),
+                            ),
                             IconButton(
                               icon: const Icon(Icons.delete),
                               onPressed: () {

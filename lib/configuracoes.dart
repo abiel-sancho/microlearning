@@ -1,33 +1,77 @@
 import 'package:flutter/material.dart';
-import 'package:testeapp/disciplinas.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+import 'package:testeapp/tema.dart';
+
 
 class Configuracoes extends StatefulWidget{
   const Configuracoes({super.key});
 
   @override
   State<Configuracoes> createState() => _ConfiguracoesState();
+
+  
 }
 
 class _ConfiguracoesState extends State<Configuracoes>{
 
-  Uint8List? _arquivoFoto; // prévia local (bytes) enquanto envia
-  String? _avatarUrl; // URL salva no Supabase
-  bool _enviando = false;
+  String get _nome {
+    final username = Supabase.instance.client.auth.currentUser?.userMetadata?['username'];
+    return username is String ? username.trim() : '';
+  }
+  
+  Future<void> _alterarNome() async {
+    var texto = _nome;
+    final novoNome = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Alterar nome'),
+        content: TextFormField(
+          initialValue: texto,
+          autofocus: true,
+          onChanged: (valor) => texto = valor,
+          decoration: const InputDecoration(hintText: 'Nome de usuário'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, texto.trim()),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+
+    if (novoNome == null || novoNome.isEmpty || novoNome == _nome) return;
+
+    try {
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(data: {'username': novoNome}),
+      );
+      if (!mounted) return;
+      setState(() {}); // o getter _nome lê o usuário atualizado
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível alterar o nome: $e')),
+      );
+    }
+  }
+
   
   final ImagePicker _picker = ImagePicker();
 
   final user = Supabase.instance.client.auth.currentUser;
 
   @override
+
+
   void initState() {
     super.initState();
-    final url = user?.userMetadata?['avatar_url'];
-    if (url is String && url.isNotEmpty) {
-      _avatarUrl = url;
-    }
+
   }
 
   Future<void> _pickImage() async {
@@ -72,6 +116,7 @@ class _ConfiguracoesState extends State<Configuracoes>{
       await supabase.auth.updateUser(
         UserAttributes(data: {'avatar_url': url}),
       );
+      debugPrint('[foto] enviada e salva no perfil: $url');
 
             if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -89,8 +134,14 @@ class _ConfiguracoesState extends State<Configuracoes>{
     }
   }
 
+  
+
   @override
+  
   Widget build(BuildContext context) {
+
+    final escuro = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title:Text('Configurações'),
@@ -99,6 +150,7 @@ class _ConfiguracoesState extends State<Configuracoes>{
       ),
       body: Column(
         children: [
+          SizedBox(height: 20),
           GestureDetector(
             onTap: () => _pickImage(),
             child: Padding(
@@ -106,7 +158,7 @@ class _ConfiguracoesState extends State<Configuracoes>{
               child: Row(
                 
                 children: [
-                  Text('Alterar foto de perfil',style: TextStyle(fontSize: 28),),
+                  Text('Alterar foto de perfil',style: TextStyle(fontSize: 24),),
                   Spacer(),
                   Icon(Icons.camera_alt)
                 ],
@@ -117,15 +169,36 @@ class _ConfiguracoesState extends State<Configuracoes>{
           Divider(),
 
           GestureDetector(
-            onTap: () => _pickImage(),
+            onTap: () => _alterarNome(),
             child: Padding(
               padding: EdgeInsetsGeometry.fromLTRB(30, 10, 30, 10),
               child: Row(
                 
                 children: [
-                  Text('Alterar nome de usuário',style: TextStyle(fontSize: 28),),
+                  Text('Alterar nome de usuário',style: TextStyle(fontSize: 24),),
                   Spacer(),
                   Icon(Icons.person)
+                ],
+              ),
+            ),
+          ),
+
+          Divider(),
+
+          GestureDetector(
+            onTap: () {
+              AppTema.modo.value =
+                  escuro ? ThemeMode.light : ThemeMode.dark;
+                  setState(() {});
+            },
+            child: Padding(
+              padding: EdgeInsetsGeometry.fromLTRB(30, 10, 30, 10),
+              child: Row(
+                
+                children: [
+                  Text('Mudar tema',style: TextStyle(fontSize: 24),),
+                  Spacer(),
+                  Icon(Icons.lightbulb)
                 ],
               ),
             ),
