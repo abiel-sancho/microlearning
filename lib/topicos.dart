@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:testeapp/criar_conteudo.dart';
 import 'package:testeapp/resumo.dart';
 import 'package:testeapp/tema.dart';
 
@@ -317,6 +318,25 @@ class _TopicosState extends State<Topicos> {
                       );
                     },
                   ),
+                // Professor da disciplina (e admin) cria conteúdo já neste tópico.
+                if (veTudo) ...[
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('Criar microconteúdo'),
+                    onPressed: () async {
+                      Navigator.pop(contextoFolha);
+                      final criou = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CriarConteudoScreen(topicoId: topico.id),
+                        ),
+                      );
+                      // Voltou com um rascunho salvo: recarrega a contagem.
+                      if (criou == true && mounted) _tentarDeNovo();
+                    },
+                  ),
+                ],
               ],
             ),
           ),
