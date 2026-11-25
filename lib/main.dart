@@ -8,8 +8,10 @@ import 'package:testeapp/tema.dart';
 void main() async {
 
   await Supabase.initialize(
-    url: 'https://auxowibptgdpcldmzrnd.supabase.co',
-    anonKey: 'sb_publishable_bMJtUaOnpllVBnulNMI6Sg_XsYxjhkp',
+    // Projeto Supabase NOVO (modelo de dados novo). A chave publishable pode
+    // ficar no app; quem protege os dados é o RLS. Sairá do código depois.
+    url: 'https://fzftderhaieoevihggsh.supabase.co',
+    anonKey: 'sb_publishable_IF5SCCI8Fk9utBYpPPCscg_MUzkpTxo',
   );
   runApp(const MyApp());
 }
@@ -29,7 +31,7 @@ class MyApp extends StatelessWidget {
     FlutterQuillLocalizations.delegate,
   ],
       debugShowCheckedModeBanner: false,
-      title: 'Microlearning',
+      title: 'MicroLearning App',
 
       theme: AppTema.claro,
       home: Login(),

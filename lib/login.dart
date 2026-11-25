@@ -264,7 +264,7 @@ class _LoginState extends State<Login> {
                           'assets/icon/logoapp.png',
                           width: 120,
                           height: 120,
-                          semanticLabel: 'Logo do Saberes ENEM',
+                          semanticLabel: 'Logo do MicroLearning App',
                         ),
                       ),
                     ),
