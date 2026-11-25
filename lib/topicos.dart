@@ -6,10 +6,11 @@ import 'package:testeapp/tema.dart';
 /// Tópicos de uma disciplina, agrupados por unidade.
 ///
 /// Caminho do aluno: Disciplina → Unidade → Tópico → Microconteúdo.
-/// - Aluno (e professor de outra disciplina): só vê tópicos que já têm
-///   microconteúdo publicado (regra 5.1).
-/// - Professor da disciplina e admin: veem todos os tópicos, com o código
-///   e a quantidade de microconteúdos (é neles que o conteúdo será criado).
+/// Todos veem o mapa inteiro (todas as unidades e tópicos), mesmo sem conteúdo
+/// (regra 5.1 revista em 25/11/2026: tópico sem publicado aparece "Em breve").
+/// - Aluno (e professor de outra disciplina): vê a quantidade de publicados.
+/// - Professor da disciplina e admin: veem também o código e todos os
+///   microconteúdos que o RLS libera (rascunhos próprios, em revisão).
 class Topicos extends StatefulWidget {
   const Topicos({super.key, required this.idDisciplina});
 
@@ -90,12 +91,11 @@ class _TopicosState extends State<Topicos> {
           t['titulo'] as String,
           micros,
         );
-        // Regra 5.1: para o aluno, tópico sem publicado não aparece.
-        if (veTudo || topico.publicados > 0) topicos.add(topico);
+        // Todos os tópicos aparecem; sem publicado, o card mostra "Em breve".
+        topicos.add(topico);
       }
       topicos.sort((a, b) => a.numero.compareTo(b.numero));
 
-      // Unidade sem nenhum tópico visível também não aparece.
       if (topicos.isNotEmpty) {
         unidades.add(_Unidade(u['numero'] as int, u['nome'] as String, topicos));
       }
@@ -191,7 +191,7 @@ class _TopicosState extends State<Topicos> {
 
     final dados = snapshot.data!;
     if (dados.unidades.isEmpty) {
-      return _mensagem('Ainda não há conteúdos publicados nesta disciplina.');
+      return _mensagem('Esta disciplina ainda não tem unidades cadastradas.');
     }
 
     final cores = Theme.of(context).colorScheme;
@@ -248,14 +248,16 @@ class _TopicosState extends State<Topicos> {
               '${_doisDigitos(topico.numero)} · ${topico.titulo}',
               textAlign: TextAlign.center,
             ),
-            if (veTudo) ...[
-              const SizedBox(height: 4),
-              Text(
-                '${topico.codigo} · ${_quantidade(topico.microconteudos.length)}',
-                textAlign: TextAlign.center,
-                style: estiloDetalhe,
-              ),
-            ],
+            const SizedBox(height: 4),
+            Text(
+              veTudo
+                  ? '${topico.codigo} · ${_quantidade(topico.microconteudos.length)}'
+                  : (topico.publicados == 0
+                      ? 'Em breve'
+                      : _quantidade(topico.publicados)),
+              textAlign: TextAlign.center,
+              style: estiloDetalhe,
+            ),
           ],
         ),
       ),
@@ -288,9 +290,11 @@ class _TopicosState extends State<Topicos> {
                 ),
                 const SizedBox(height: 12),
                 if (topico.microconteudos.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Text('Nenhum microconteúdo neste tópico ainda.'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(veTudo
+                        ? 'Nenhum microconteúdo neste tópico ainda.'
+                        : 'Em breve: ainda não há conteúdo publicado neste tópico.'),
                   ),
                 for (final micro in topico.microconteudos)
                   ListTile(
