@@ -13,11 +13,17 @@ import 'package:testeapp/tema.dart';
 ///   obrigatórios será feita no envio para revisão (etapa futura).
 /// - O texto do conteúdo central e do exemplo é guardado como Delta do Quill
 ///   (jsonb), sem conversão para Markdown.
+/// - Com [idMicroconteudo], a mesma tela EDITA um rascunho já salvo (vinda de
+///   "Meus conteúdos"). O banco só aceita a edição enquanto ele for rascunho
+///   do próprio autor (policy `microconteudos_editar_rascunho`).
 class CriarConteudoScreen extends StatefulWidget {
-  const CriarConteudoScreen({super.key, this.topicoId});
+  const CriarConteudoScreen({super.key, this.topicoId, this.idMicroconteudo});
 
   /// Tópico já escolhido (quando a tela é aberta pela folha do tópico).
   final int? topicoId;
+
+  /// Rascunho a editar; nulo = criar um novo.
+  final int? idMicroconteudo;
 
   @override
   State<CriarConteudoScreen> createState() => _CriarConteudoScreenState();
@@ -107,12 +113,21 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
 
   // Questões criadas nesta tela. Ficam só em memória até salvar o rascunho;
   // então são gravadas ligadas ao id do microconteúdo recém-criado.
+  // Na edição, as que já existem no banco guardam a chave 'id'.
   final List<Map<String, dynamic>> _questoes = [];
+  // Na edição: ids das questões já salvas que o professor removeu.
+  final List<int> _questoesRemovidas = [];
   static const _minQuestoes = 2;
   static const _maxQuestoes = 5;
   bool get maximoDeQuestoes => _questoes.length >= _maxQuestoes;
 
   bool _salvando = false;
+
+  bool get _editando => widget.idMicroconteudo != null;
+
+  /// Na edição: motivo para não abrir o formulário (não encontrado, não é
+  /// mais rascunho). Nulo = pode editar.
+  String? _avisoEdicao;
 
   @override
   void initState() {
@@ -212,7 +227,10 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
       debugPrint('modelo_campos indisponível, usando a reserva: $erro');
     }
 
-    // Veio pela folha do tópico: pré-seleciona disciplina e unidade.
+    // Edição: preenche o formulário com o rascunho salvo (inclusive o tópico).
+    if (_editando) await _carregarRascunho();
+
+    // Veio pela folha do tópico (ou é edição): pré-seleciona disciplina e unidade.
     if (_topicoId != null) {
       for (final d in disciplinas) {
         for (final u in d['unidades'] as List) {
@@ -226,6 +244,84 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
     }
 
     return _Opcoes(papel, disciplinas, campos);
+  }
+
+  /// Lê o rascunho e suas questões e preenche os campos do formulário.
+  Future<void> _carregarRascunho() async {
+    final micro = await _supabase
+        .from('microconteudos')
+        .select('topico_id, autor_id, status, titulo, objetivo, publico_alvo, '
+            'pre_requisitos, conteudo_central, exemplo, tempo_estimado_min, '
+            'referencias, nivel_bloom, dificuldade, '
+            'questoes(id, enunciado, alternativas, correta, ordem)')
+        .eq('id', widget.idMicroconteudo!)
+        .maybeSingle();
+
+    if (micro == null) {
+      _avisoEdicao = 'Conteúdo indisponível.';
+      return;
+    }
+    if (micro['status'] != 'rascunho') {
+      _avisoEdicao = 'Este conteúdo não é mais rascunho e não pode ser editado aqui.';
+      return;
+    }
+
+    _topicoId = micro['topico_id'] as int?;
+    _tituloController.text = (micro['titulo'] as String?) ?? '';
+    _objetivoController.text = (micro['objetivo'] as String?) ?? '';
+    _publicoController.text = (micro['publico_alvo'] as String?) ?? '';
+    _preencherLista(_preRequisitos, micro['pre_requisitos']);
+    _preencherLista(_referencias, micro['referencias']);
+
+    final conteudo = _documento(micro['conteudo_central']);
+    if (conteudo != null) _conteudoController.document = conteudo;
+    final exemplo = _documento(micro['exemplo']);
+    if (exemplo != null) {
+      _exemploController = QuillController(
+        document: exemplo,
+        selection: const TextSelection.collapsed(offset: 0),
+      )..addListener(_atualizar);
+    }
+
+    _tempo = micro['tempo_estimado_min'] as int?;
+    _bloom = micro['nivel_bloom'] as String?;
+    _dificuldade = micro['dificuldade'] as String?;
+
+    final questoes = List<Map<String, dynamic>>.from(micro['questoes'] as List? ?? [])
+      ..sort((a, b) => (a['ordem'] as int).compareTo(b['ordem'] as int));
+    _questoes
+      ..clear()
+      ..addAll([
+        for (final q in questoes)
+          {
+            'id': q['id'],
+            'enunciado': q['enunciado'],
+            'alternativas': q['alternativas'],
+            'correta': q['correta'],
+          },
+      ]);
+  }
+
+  /// Troca o conteúdo de uma lista de caixas de texto (mínimo 1 caixa).
+  void _preencherLista(List<TextEditingController> lista, dynamic valores) {
+    final textos = [for (final v in (valores as List? ?? const [])) v.toString()];
+    for (final c in lista) {
+      c.dispose();
+    }
+    lista
+      ..clear()
+      ..addAll([for (final t in textos) TextEditingController(text: t)]);
+    if (lista.isEmpty) lista.add(TextEditingController());
+  }
+
+  /// Delta salvo → documento do Quill. Nulo se vazio ou inválido.
+  static Document? _documento(dynamic delta) {
+    if (delta is! List || delta.isEmpty) return null;
+    try {
+      return Document.fromJson(delta);
+    } catch (_) {
+      return null;
+    }
   }
 
   List<Map<String, dynamic>> _unidadesDe(_Opcoes o) {
@@ -275,27 +371,18 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
 
     setState(() => _salvando = true);
     try {
-      final exemplo = _exemploController;
+      if (_editando) {
+        await _atualizarRascunho();
+        if (!mounted) return;
+        _mensagem('Rascunho atualizado!');
+        Navigator.pop(context, true);
+        return;
+      }
+
       final micro = await _supabase
           .from('microconteudos')
-          .insert({
-            // autor_id e status (rascunho) são preenchidos pelo banco.
-            'topico_id': _topicoId,
-            'titulo': _tituloController.text.trim(),
-            'objetivo': _ouNulo(_objetivoController.text),
-            'publico_alvo': _ouNulo(_publicoController.text),
-            'pre_requisitos': _textos(_preRequisitos),
-            'conteudo_central': _conteudoController.document.isEmpty()
-                ? null
-                : _conteudoController.document.toDelta().toJson(),
-            'exemplo': (exemplo == null || exemplo.document.isEmpty())
-                ? null
-                : exemplo.document.toDelta().toJson(),
-            'tempo_estimado_min': _tempo,
-            'referencias': _textos(_referencias),
-            'nivel_bloom': _bloom,
-            'dificuldade': _dificuldade,
-          })
+          // autor_id e status (rascunho) são preenchidos pelo banco.
+          .insert(_dadosDoMicroconteudo())
           .select('id')
           .single();
 
@@ -334,11 +421,80 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
     }
   }
 
+  /// Campos do microconteúdo, iguais na criação e na edição.
+  Map<String, dynamic> _dadosDoMicroconteudo() {
+    final exemplo = _exemploController;
+    return {
+      'topico_id': _topicoId,
+      'titulo': _tituloController.text.trim(),
+      'objetivo': _ouNulo(_objetivoController.text),
+      'publico_alvo': _ouNulo(_publicoController.text),
+      'pre_requisitos': _textos(_preRequisitos),
+      'conteudo_central': _conteudoController.document.isEmpty()
+          ? null
+          : _conteudoController.document.toDelta().toJson(),
+      'exemplo': (exemplo == null || exemplo.document.isEmpty())
+          ? null
+          : exemplo.document.toDelta().toJson(),
+      'tempo_estimado_min': _tempo,
+      'referencias': _textos(_referencias),
+      'nivel_bloom': _bloom,
+      'dificuldade': _dificuldade,
+    };
+  }
+
+  /// Edição: grava o rascunho e sincroniza as questões (apaga as removidas,
+  /// atualiza as existentes pelo id, insere as novas, renumera a ordem).
+  /// [inferência] São várias operações seguidas, sem transação; se a conexão
+  /// cair no meio, salvar de novo completa o que faltou.
+  Future<void> _atualizarRascunho() async {
+    final id = widget.idMicroconteudo!;
+
+    // O RLS só deixa atualizar rascunho do próprio autor: se nada voltar,
+    // o conteúdo não é mais rascunho (ou não é seu).
+    final atualizados = await _supabase
+        .from('microconteudos')
+        .update(_dadosDoMicroconteudo())
+        .eq('id', id)
+        .select('id');
+    if (atualizados.isEmpty) {
+      throw const PostgrestException(message: 'sem permissão', code: '42501');
+    }
+
+    if (_questoesRemovidas.isNotEmpty) {
+      await _supabase.from('questoes').delete().inFilter('id', _questoesRemovidas);
+      _questoesRemovidas.clear();
+    }
+
+    for (var i = 0; i < _questoes.length; i++) {
+      final q = _questoes[i];
+      final dados = {
+        'enunciado': q['enunciado'],
+        'alternativas': q['alternativas'],
+        'correta': q['correta'],
+        'ordem': i + 1,
+      };
+      if (q['id'] != null) {
+        await _supabase.from('questoes').update(dados).eq('id', q['id']);
+      } else {
+        final nova = await _supabase
+            .from('questoes')
+            .insert({...dados, 'microconteudo_id': id})
+            .select('id')
+            .single();
+        q['id'] = nova['id']; // salvar de novo não duplica
+      }
+    }
+  }
+
   String _traduzirErro(Object erro) {
     if (erro is PostgrestException) {
       switch (erro.code) {
         case '42501': // RLS / permissão
-          return 'Você não tem permissão para criar conteúdo neste tópico.';
+          return _editando
+              ? 'Não foi possível salvar: este conteúdo não é mais um rascunho seu, '
+                  'ou o tópico escolhido não é de uma disciplina sua.'
+              : 'Você não tem permissão para criar conteúdo neste tópico.';
         case '23514': // check constraint
           return 'Algum campo está fora do limite permitido (título até 60 caracteres, '
               'até 3 pré-requisitos, tempo até 10 minutos).';
@@ -380,7 +536,9 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
       if (indice == null) {
         _questoes.add(questao);
       } else {
-        _questoes[indice] = questao;
+        // Mantém o id da questão já salva (edição), para atualizar em vez de duplicar.
+        final id = _questoes[indice]['id'];
+        _questoes[indice] = {...questao, 'id': ?id};
       }
     });
   }
@@ -408,6 +566,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
         }
 
         final opcoes = snapshot.data!;
+        if (_avisoEdicao != null) return _telaAviso(_avisoEdicao!);
         if (opcoes.papel != 'professor' && opcoes.papel != 'admin') {
           return _telaAviso('Somente professores podem criar microconteúdos.');
         }
@@ -420,7 +579,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
         final feitos = obrigatorios.where((c) => _preenchido(c.campo)).length;
 
         return Scaffold(
-          appBar: AppBar(title: const Text('Criar Conteúdo'), elevation: 0),
+          appBar: AppBar(title: Text(_titulo), elevation: 0),
           body: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -449,9 +608,11 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
     );
   }
 
+  String get _titulo => _editando ? 'Editar Conteúdo' : 'Criar Conteúdo';
+
   Widget _telaAviso(String texto) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Criar Conteúdo'), elevation: 0),
+      appBar: AppBar(title: Text(_titulo), elevation: 0),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -818,7 +979,10 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
               trailing: IconButton(
                 tooltip: 'Remover questão',
                 icon: const Icon(Icons.delete_outline),
-                onPressed: () => setState(() => _questoes.removeAt(index)),
+                onPressed: () => setState(() {
+                  final removida = _questoes.removeAt(index);
+                  if (removida['id'] != null) _questoesRemovidas.add(removida['id'] as int);
+                }),
               ),
             );
           },
