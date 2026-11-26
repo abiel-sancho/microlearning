@@ -308,12 +308,10 @@ class _TopicosState extends State<Topicos> {
                     ].join(' · ')),
                     onTap: () {
                       Navigator.pop(contextoFolha);
-                      // TODO(resumo): o Resumo ainda lê a tabela antiga `topico`;
-                      // ao ser adaptado, o parâmetro vira o id do microconteúdo.
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => Resumo(idTopico: micro['id'].toString()),
+                          builder: (context) => Resumo(idMicroconteudo: micro['id'].toString()),
                         ),
                       );
                     },

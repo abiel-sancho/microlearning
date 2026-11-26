@@ -23,7 +23,9 @@ class _PainelRevisoesState extends State<PainelRevisoes> {
   Future<void> _abrir(RevisaoPendente item) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => Resumo(idTopico: item.idTopico)),
+      // TODO(M3.4): o painel ainda usa o id de tópico do banco antigo; ao ser
+      // refeito por questão, deve abrir o microconteúdo da questão vencida.
+      MaterialPageRoute(builder: (context) => Resumo(idMicroconteudo: item.idTopico)),
     );
     // atualiza a lista de revisões marcadas pra hoej
     if (mounted) _recarregar();
