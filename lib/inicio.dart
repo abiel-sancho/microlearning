@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/disciplinas.dart';
 import 'package:testeapp/login.dart';
 import 'package:testeapp/painel_revisoes.dart';
+import 'package:testeapp/revisoes_pendentes.dart';
 
 class InicioScreen extends StatefulWidget {
   const InicioScreen({super.key});
@@ -27,6 +28,13 @@ class _InicioScreenState extends State<InicioScreen> {
   String? _nomePerfil;
   String? _papel;
 
+  // Revisão por pares (professor e admin): quantos aguardam e quantos atrasados.
+  // Não confundir com o painel de revisões espaçadas (SM-2) acima.
+  int? _aguardandoRevisao;
+  int _atrasadas = 0;
+
+  bool get _revisaConteudo => _papel == 'professor' || _papel == 'admin';
+
   @override
   void initState() {
     super.initState();
@@ -47,10 +55,35 @@ class _InicioScreenState extends State<InicioScreen> {
         _nomePerfil = perfil['nome'] as String?;
         _papel = perfil['papel'] as String?;
       });
+      _carregarFilaRevisao();
     } catch (erro, pilha) {
       // Sem o perfil, a tela continua funcionando com o nome do cadastro.
       debugPrint('Erro ao carregar o perfil: $erro\n$pilha');
     }
+  }
+
+  /// Conta a fila de revisão por pares (função `revisoes_pendentes()`).
+  Future<void> _carregarFilaRevisao() async {
+    if (!_revisaConteudo) return;
+    try {
+      final linhas = await _supabase.rpc('revisoes_pendentes') as List? ?? const [];
+      if (!mounted) return;
+      setState(() {
+        _aguardandoRevisao = linhas.length;
+        _atrasadas = linhas.where((l) => (l as Map)['atrasada'] == true).length;
+      });
+    } catch (erro, pilha) {
+      // Sem a contagem, o cartão aparece sem o número.
+      debugPrint('Erro ao contar a fila de revisão: $erro\n$pilha');
+    }
+  }
+
+  Future<void> _irParaRevisoes() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RevisoesPendentes()),
+    );
+    if (mounted) _carregarFilaRevisao();
   }
 
   /// Nome do perfil; se não carregou, o nome enviado no cadastro.
@@ -82,7 +115,11 @@ class _InicioScreenState extends State<InicioScreen> {
     );
 
     // Ao voltar, o aluno pode ter respondido questões: atualiza o painel.
-    if (mounted) setState(() => _recarga++);
+    // O professor pode ter revisado pelo menu: atualiza a contagem.
+    if (mounted) {
+      setState(() => _recarga++);
+      _carregarFilaRevisao();
+    }
   }
 
   /// Encerra a sessão e volta ao login, limpando a pilha de telas
@@ -137,11 +174,61 @@ class _InicioScreenState extends State<InicioScreen> {
             PainelRevisoes(key: ValueKey(_recarga)),
             const SizedBox(height: 24),
           ],
+          if (_revisaConteudo) ...[
+            _cartaoRevisaoPorPares(context),
+            const SizedBox(height: 24),
+          ],
           ElevatedButton(
             onPressed: _irParaDisciplinas,
             child: const Text('Ir para Disciplinas'),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Cartão da revisão por pares, só para professor e admin.
+  Widget _cartaoRevisaoPorPares(BuildContext context) {
+    final tema = Theme.of(context);
+    final n = _aguardandoRevisao;
+    final texto = n == null
+        ? 'Conteúdos de colegas aguardando a sua avaliação.'
+        : n == 0
+            ? 'Nenhum conteúdo aguardando revisão.'
+            : n == 1
+                ? '1 conteúdo aguardando revisão'
+                : '$n conteúdos aguardando revisão';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.rate_review_outlined, color: tema.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Revisão por pares', style: tema.textTheme.titleMedium),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(texto),
+            if (_atrasadas > 0)
+              Text(
+                _atrasadas == 1 ? '1 atrasada (mais de 7 dias)' : '$_atrasadas atrasadas (mais de 7 dias)',
+                style: TextStyle(color: tema.colorScheme.error),
+              ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonal(
+                onPressed: _irParaRevisoes,
+                child: const Text('Revisar'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

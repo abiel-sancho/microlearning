@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:testeapp/configuracoes.dart';
 import 'package:testeapp/criar_conteudo.dart';
 import 'package:testeapp/meus_resumos.dart';
+import 'package:testeapp/revisoes_pendentes.dart';
 import 'package:testeapp/sobre.dart';
 import 'package:testeapp/topicos.dart';
 import 'package:testeapp/tema.dart';
@@ -301,6 +302,22 @@ class _DisciplinasState extends State<Disciplinas> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => MeusResumos(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // Revisão por pares: fila dos colegas da disciplina (admin: todos).
+                Visibility(
+                  visible: _podeCriarConteudo,
+                  child: ListTile(
+                    leading: const Icon(Icons.rate_review_outlined),
+                    title: const Text('Revisar conteúdos'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RevisoesPendentes(),
                         ),
                       );
                     },
