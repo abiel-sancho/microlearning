@@ -16,20 +16,16 @@ class _InicioScreenState extends State<InicioScreen> {
   final _supabase = Supabase.instance.client;
   late final User? _usuario = _supabase.auth.currentUser;
 
-  // TODO(revisoes): o painel ainda lê a tabela antiga `revisao_topico`, que
-  // não existe no banco novo. Fica escondido até a tela de questões/SM-2 ser
-  // adaptada para `revisao_espacada`. Para ver o painel, troque para true.
-  static const _mostrarPainelRevisoes = false;
-
-  // Mudar este número recria o painel de revisões, que busca os dados de novo.
-  int _recarga = 0;
+  // Revisão espaçada (SM-2): questões vencidas hoje, pela função
+  // `total_revisoes_de_hoje()`. Nulo enquanto carrega ou se falhar.
+  int? _revisoesHoje;
 
   // Dados da tabela perfis (fonte oficial do nome e do papel).
   String? _nomePerfil;
   String? _papel;
 
   // Revisão por pares (professor e admin): quantos aguardam e quantos atrasados.
-  // Não confundir com o painel de revisões espaçadas (SM-2) acima.
+  // Não confundir com as revisões espaçadas (SM-2) acima.
   int? _aguardandoRevisao;
   int _atrasadas = 0;
 
@@ -39,6 +35,28 @@ class _InicioScreenState extends State<InicioScreen> {
   void initState() {
     super.initState();
     _carregarPerfil();
+    _carregarRevisoesHoje();
+  }
+
+  /// Conta as questões vencidas hoje (revisão espaçada, SM-2).
+  Future<void> _carregarRevisoesHoje() async {
+    if (_usuario == null) return;
+    try {
+      final total = await _supabase.rpc('total_revisoes_de_hoje') as int?;
+      if (!mounted) return;
+      setState(() => _revisoesHoje = total ?? 0);
+    } catch (erro, pilha) {
+      // Sem a contagem, o cartão aparece sem o número.
+      debugPrint('Erro ao contar as revisões de hoje: $erro\n$pilha');
+    }
+  }
+
+  Future<void> _irParaRevisoesDeHoje() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PainelRevisoes()),
+    );
+    if (mounted) _carregarRevisoesHoje();
   }
 
   Future<void> _carregarPerfil() async {
@@ -118,10 +136,10 @@ class _InicioScreenState extends State<InicioScreen> {
       ),
     );
 
-    // Ao voltar, o aluno pode ter respondido questões: atualiza o painel.
+    // Ao voltar, o aluno pode ter respondido questões: atualiza as revisões.
     // O professor pode ter revisado pelo menu: atualiza a contagem.
     if (mounted) {
-      setState(() => _recarga++);
+      _carregarRevisoesHoje();
       _carregarFilaRevisao();
     }
   }
@@ -174,10 +192,8 @@ class _InicioScreenState extends State<InicioScreen> {
             Center(child: Chip(label: Text(rotuloPapel))),
           ],
           const SizedBox(height: 24),
-          if (_mostrarPainelRevisoes) ...[
-            PainelRevisoes(key: ValueKey(_recarga)),
-            const SizedBox(height: 24),
-          ],
+          _cartaoRevisoesDeHoje(context),
+          const SizedBox(height: 24),
           if (_revisaConteudo) ...[
             _cartaoRevisaoPorPares(context),
             const SizedBox(height: 24),
@@ -187,6 +203,50 @@ class _InicioScreenState extends State<InicioScreen> {
             child: const Text('Ir para Disciplinas'),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Cartão da revisão espaçada (SM-2): quantas questões vencem hoje.
+  Widget _cartaoRevisoesDeHoje(BuildContext context) {
+    final tema = Theme.of(context);
+    final n = _revisoesHoje;
+    final texto = n == null
+        ? 'Questões que você errou voltam aqui no dia certo.'
+        : n == 0
+            ? 'Nenhuma revisão para hoje.'
+            : n == 1
+                ? '1 questão para revisar hoje'
+                : '$n questões para revisar hoje';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.event_repeat, color: tema.colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Revisões de hoje', style: tema.textTheme.titleMedium),
+                ),
+                if (n != null && n > 0) Badge(label: Text('$n')),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(texto),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonal(
+                onPressed: _irParaRevisoesDeHoje,
+                child: const Text('Abrir'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
