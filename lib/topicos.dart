@@ -10,8 +10,10 @@ import 'package:testeapp/tema.dart';
 /// Todos veem o mapa inteiro (todas as unidades e tópicos), mesmo sem conteúdo
 /// (regra 5.1 revista em 25/11/2026: tópico sem publicado aparece "Em breve").
 /// - Aluno (e professor de outra disciplina): vê a quantidade de publicados.
-/// - Professor da disciplina e admin: veem também o código e todos os
-///   microconteúdos que o RLS libera (rascunhos próprios, em revisão).
+/// - Professor da disciplina e admin: veem também o código e TODOS os
+///   microconteúdos do tópico, inclusive rascunhos de colegas, com autor e
+///   status (CLAUDE.md 5.4), pela função `microconteudos_da_disciplina`
+///   (migration 8). O rascunho de colega aparece com cadeado e não abre.
 class Topicos extends StatefulWidget {
   const Topicos({super.key, required this.idDisciplina});
 
@@ -35,8 +37,10 @@ class _Topico {
   final String codigo;
   final String titulo;
 
-  /// Microconteúdos que quem está logado pode ver (o RLS do banco já filtra),
-  /// sem os arquivados, na ordem de exibição.
+  /// Microconteúdos do tópico, sem os arquivados, na ordem de exibição.
+  /// Aluno: só os publicados (RLS). Professor da disciplina e admin: todos,
+  /// vindos de `microconteudos_da_disciplina` (com `autor_nome`, `meu` e
+  /// `pode_abrir`).
   final List<Map<String, dynamic>> microconteudos;
 
   int get publicados =>
@@ -72,6 +76,26 @@ class _TopicosState extends State<Topicos> {
 
     final veTudo = await _podeVerTodosOsTopicos(idDisciplina);
 
+    // Professor da disciplina e admin: a lista completa vem da função do banco,
+    // agrupada por tópico. Se ela falhar, fica a lista do RLS (sem os
+    // rascunhos dos colegas e sem autor).
+    Map<int, List<Map<String, dynamic>>>? completos;
+    if (veTudo) {
+      try {
+        final resposta = await _supabase.rpc(
+          'microconteudos_da_disciplina',
+          params: {'p_disciplina': idDisciplina},
+        );
+        completos = {};
+        for (final linha in (resposta as List? ?? const [])) {
+          final m = Map<String, dynamic>.from(linha as Map);
+          completos.putIfAbsent(m['topico_id'] as int, () => []).add(m);
+        }
+      } catch (erro, pilha) {
+        debugPrint('Erro ao carregar os microconteúdos da disciplina: $erro\n$pilha');
+      }
+    }
+
     var nomeDisciplina = '';
     final unidades = <_Unidade>[];
     for (final u in linhas) {
@@ -79,7 +103,10 @@ class _TopicosState extends State<Topicos> {
 
       final topicos = <_Topico>[];
       for (final t in (u['topicos'] as List)) {
-        final micros = List<Map<String, dynamic>>.from(t['microconteudos'] as List)
+        final micros = (completos?[t['id'] as int] ??
+                (completos == null
+                    ? List<Map<String, dynamic>>.from(t['microconteudos'] as List)
+                    : const <Map<String, dynamic>>[]))
             .where((m) => m['status'] != 'arquivado')
             .where((m) => veTudo || m['status'] == 'publicado')
             .toList()
@@ -300,13 +327,39 @@ class _TopicosState extends State<Topicos> {
                 for (final micro in topico.microconteudos)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.article_outlined),
+                    // Rascunho de colega: aparece, mas o conteúdo é só do autor.
+                    leading: Icon(micro['pode_abrir'] == false
+                        ? Icons.lock_outline
+                        : Icons.article_outlined),
                     title: Text(micro['titulo'] as String),
                     subtitle: Text([
                       (micro['codigo'] as String?) ?? 'sem código',
                       if (veTudo) _rotuloStatus(micro['status']),
+                      if (veTudo && micro['autor_nome'] != null)
+                        micro['meu'] == true
+                            ? '${micro['autor_nome']} (você)'
+                            : micro['autor_nome'] as String,
                     ].join(' · ')),
                     onTap: () {
+                      if (micro['pode_abrir'] == false) {
+                        // Diálogo (e não SnackBar), que ficaria atrás da folha.
+                        showDialog<void>(
+                          context: contextoFolha,
+                          builder: (contextoAviso) => AlertDialog(
+                            title: const Text('Rascunho de colega'),
+                            content: Text('"${micro['titulo']}" é um rascunho de '
+                                '${micro['autor_nome'] ?? 'um colega'}. Só o autor vê o '
+                                'conteúdo até enviá-lo para revisão.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(contextoAviso),
+                                child: const Text('Entendi'),
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
                       Navigator.pop(contextoFolha);
                       Navigator.push(
                         context,
