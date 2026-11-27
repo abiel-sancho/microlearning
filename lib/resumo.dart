@@ -116,6 +116,14 @@ class _ResumoState extends State<Resumo> {
         ),
         title: Text((topico?['titulo'] ?? '').toString()),
         actions: [
+          // Reportar erro (CLAUDE.md 5.9): só em conteúdo publicado
+          // (decisão de 27/11; em revisão, o colega já avalia pela rubrica).
+          if (_micro?['status'] == 'publicado')
+            IconButton(
+              tooltip: 'Reportar erro',
+              onPressed: _reportarErro,
+              icon: const Icon(Icons.flag_outlined),
+            ),
           IconButton(
             tooltip: 'Ir para Disciplinas',
             onPressed: () => irParaDisciplinas(context),
@@ -125,6 +133,66 @@ class _ResumoState extends State<Resumo> {
       ),
       body: _corpo(context),
     );
+  }
+
+  /// Diálogo "O que está errado?" → grava em `reportes_erro`. `usuario_id`
+  /// e `status = aberto` vêm do banco (default e policy `reportes_erro_criar`).
+  Future<void> _reportarErro() async {
+    final id = _micro?['id'];
+    if (id == null) return;
+    final texto = TextEditingController();
+    final descricao = await showDialog<String>(
+      context: context,
+      builder: (contexto) => StatefulBuilder(
+        builder: (contexto, atualizar) {
+          final valido = texto.text.trim().isNotEmpty;
+          return AlertDialog(
+            title: const Text('Reportar erro'),
+            content: TextField(
+              controller: texto,
+              autofocus: true,
+              maxLength: 1000,
+              minLines: 3,
+              maxLines: 6,
+              onChanged: (_) => atualizar(() {}),
+              decoration: const InputDecoration(
+                labelText: 'O que está errado?',
+                hintText: 'Ex.: a data da Lei Áurea no 2º parágrafo está errada.',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(contexto),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: valido ? () => Navigator.pop(contexto, texto.text.trim()) : null,
+                child: const Text('Enviar'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    texto.dispose();
+    if (descricao == null || descricao.isEmpty || !mounted) return;
+
+    final mensageiro = ScaffoldMessenger.of(context);
+    try {
+      await _supabase.from('reportes_erro').insert({
+        'microconteudo_id': id,
+        'descricao': descricao,
+      });
+      mensageiro.showSnackBar(const SnackBar(
+        content: Text('Obrigado! O autor e a coordenação vão ver o seu reporte.'),
+      ));
+    } catch (erro, pilha) {
+      debugPrint('Erro ao reportar: $erro\n$pilha');
+      mensageiro.showSnackBar(const SnackBar(
+        content: Text('Não foi possível enviar o reporte. Verifique a conexão.'),
+      ));
+    }
   }
 
   Widget _corpo(BuildContext context) {

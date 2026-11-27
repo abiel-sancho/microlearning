@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/disciplinas.dart';
 import 'package:testeapp/login.dart';
 import 'package:testeapp/painel_revisoes.dart';
+import 'package:testeapp/reportes_erro.dart';
 import 'package:testeapp/resumo.dart';
 import 'package:testeapp/revisoes_pendentes.dart';
 import 'package:testeapp/topicos.dart';
@@ -34,6 +35,9 @@ class _InicioScreenState extends State<InicioScreen> {
   // Não confundir com as revisões espaçadas (SM-2) acima.
   int? _aguardandoRevisao;
   int _atrasadas = 0;
+
+  // Reportes de erro abertos (professor: dos próprios conteúdos; admin: todos).
+  int? _reportesAbertos;
 
   bool get _revisaConteudo => _papel == 'professor' || _papel == 'admin';
 
@@ -177,6 +181,7 @@ class _InicioScreenState extends State<InicioScreen> {
         _papel = perfil['papel'] as String?;
       });
       _carregarFilaRevisao();
+      _carregarReportes();
     } catch (erro, pilha) {
       // Sem o perfil, a tela continua funcionando com o nome do cadastro.
       debugPrint('Erro ao carregar o perfil: $erro\n$pilha');
@@ -197,6 +202,36 @@ class _InicioScreenState extends State<InicioScreen> {
       // Sem a contagem, o cartão aparece sem o número.
       debugPrint('Erro ao contar a fila de revisão: $erro\n$pilha');
     }
+  }
+
+  /// Conta os reportes abertos que o professor (autor) ou o admin deve ver.
+  Future<void> _carregarReportes() async {
+    if (!_revisaConteudo) return;
+    try {
+      final List linhas;
+      if (_papel == 'admin') {
+        linhas = await _supabase.from('reportes_erro').select('id').eq('status', 'aberto');
+      } else {
+        linhas = await _supabase
+            .from('reportes_erro')
+            .select('id, microconteudos!inner(autor_id)')
+            .eq('status', 'aberto')
+            .eq('microconteudos.autor_id', _usuario!.id);
+      }
+      if (!mounted) return;
+      setState(() => _reportesAbertos = linhas.length);
+    } catch (erro, pilha) {
+      // Sem a contagem, o cartão aparece sem o número.
+      debugPrint('Erro ao contar os reportes: $erro\n$pilha');
+    }
+  }
+
+  Future<void> _irParaReportes() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ReportesErro(ehAdmin: _papel == 'admin')),
+    );
+    if (mounted) _carregarReportes();
   }
 
   Future<void> _irParaRevisoes() async {
@@ -244,6 +279,7 @@ class _InicioScreenState extends State<InicioScreen> {
     if (mounted) {
       _carregarRevisoesHoje();
       _carregarFilaRevisao();
+      _carregarReportes();
     }
   }
 
@@ -301,6 +337,8 @@ class _InicioScreenState extends State<InicioScreen> {
           const SizedBox(height: 24),
           if (_revisaConteudo) ...[
             _cartaoRevisaoPorPares(context),
+            const SizedBox(height: 24),
+            _cartaoReportes(context),
             const SizedBox(height: 24),
           ],
           ElevatedButton(
@@ -396,6 +434,52 @@ class _InicioScreenState extends State<InicioScreen> {
                         icon: const Icon(Icons.search),
                         onPressed: _buscarCodigo,
                       ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Cartão dos reportes de erro, só para professor e admin.
+  Widget _cartaoReportes(BuildContext context) {
+    final tema = Theme.of(context);
+    final n = _reportesAbertos;
+    final texto = n == null
+        ? (_papel == 'admin'
+            ? 'Erros apontados nos conteúdos.'
+            : 'Erros apontados nos seus conteúdos.')
+        : n == 0
+            ? 'Nenhum reporte aberto.'
+            : n == 1
+                ? '1 reporte aberto'
+                : '$n reportes abertos';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.flag_outlined, color: tema.colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Reportes de erro', style: tema.textTheme.titleMedium),
+                ),
+                if (n != null && n > 0) Badge(label: Text('$n')),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(texto),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonal(
+                onPressed: _irParaReportes,
+                child: const Text('Ver'),
               ),
             ),
           ],
