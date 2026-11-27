@@ -65,6 +65,26 @@ class _Resposta {
   bool get acertou => escolhida == questao.correta;
 }
 
+/// Fecha as telas abertas até a de Disciplinas (rota 'disciplinas', ver
+/// inicio.dart). Se ela não estiver aberta (veio de Meus conteúdos ou das
+/// revisões), volta ao Início e abre Disciplinas. Usada aqui e no resumo.
+void irParaDisciplinas(BuildContext context) {
+  final navegador = Navigator.of(context);
+  var achou = false;
+  navegador.popUntil((rota) {
+    if (rota.settings.name == 'disciplinas') achou = true;
+    return achou || rota.isFirst;
+  });
+  if (!achou) {
+    navegador.push(
+      MaterialPageRoute(
+        settings: const RouteSettings(name: 'disciplinas'),
+        builder: (_) => const Disciplinas(),
+      ),
+    );
+  }
+}
+
 /// Letra mostrada para a alternativa de índice [i] (0 → A, 1 → B...).
 String _letra(int i) => String.fromCharCode(65 + i);
 
@@ -143,26 +163,6 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
       _selecionada = null;
       _confirmada = false;
     });
-  }
-
-  /// Fecha as telas abertas até a de Disciplinas (rota 'disciplinas', ver
-  /// inicio.dart). Se ela não estiver aberta (veio de Meus conteúdos ou das
-  /// revisões), volta ao Início e abre Disciplinas.
-  void _irParaDisciplinas() {
-    final navegador = Navigator.of(context);
-    var achou = false;
-    navegador.popUntil((rota) {
-      if (rota.settings.name == 'disciplinas') achou = true;
-      return achou || rota.isFirst;
-    });
-    if (!achou) {
-      navegador.push(
-        MaterialPageRoute(
-          settings: const RouteSettings(name: 'disciplinas'),
-          builder: (_) => const Disciplinas(),
-        ),
-      );
-    }
   }
 
   void _refazer() {
@@ -374,7 +374,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: TextButton.icon(
-              onPressed: _irParaDisciplinas,
+              onPressed: () => irParaDisciplinas(context),
               icon: const Icon(Icons.menu_book),
               label: const Text('Ir para Disciplinas'),
             ),

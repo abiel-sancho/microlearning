@@ -115,6 +115,13 @@ class _ResumoState extends State<Resumo> {
           icon: const Icon(Icons.arrow_back),
         ),
         title: Text((topico?['titulo'] ?? '').toString()),
+        actions: [
+          IconButton(
+            tooltip: 'Ir para Disciplinas',
+            onPressed: () => irParaDisciplinas(context),
+            icon: const Icon(Icons.menu_book),
+          ),
+        ],
       ),
       body: _corpo(context),
     );
