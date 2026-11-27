@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:testeapp/questoes_aluno.dart';
 import 'package:testeapp/tema.dart';
 
 /// Leitura de um microconteúdo (tabela `microconteudos`).
@@ -169,14 +170,24 @@ class _ResumoState extends State<Resumo> {
             padding: const EdgeInsets.all(16),
             child: SizedBox(
               width: double.infinity,
-              // TODO(M3.2): reativar quando questoes_aluno.dart ler as
-              // questões novas (`questoes.microconteudo_id`).
+              // Não publicado (autor ou revisor conferindo): abre em prévia,
+              // sem gravar respostas.
               child: FilledButton.icon(
-                onPressed: null,
+                onPressed: totalQuestoes == 0
+                    ? null
+                    : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => QuestoesAluno(
+                              idMicroconteudo: micro['id'] as int,
+                              previa: micro['status'] != 'publicado',
+                            ),
+                          ),
+                        ),
                 icon: const Icon(Icons.quiz),
                 label: Text(totalQuestoes == 0
-                    ? 'Questões (em breve)'
-                    : 'Questões (em breve) · $totalQuestoes'),
+                    ? 'Sem questões'
+                    : 'Questões · $totalQuestoes'),
               ),
             ),
           ),

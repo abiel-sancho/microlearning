@@ -1,61 +1,102 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:testeapp/revisao_service.dart';
 import 'package:testeapp/tema.dart';
 
-/// Mostra ao aluno, uma por vez, as questões de um tópico e grava cada
-/// resposta na tabela `respostas_aluno` para consulta posterior (feedback).
+/// Mostra ao aluno, uma por vez, as questões de um microconteúdo (tabela
+/// `questoes`, campo `microconteudo_id`) e grava cada resposta na tabela
+/// `respostas` com `contexto = 'microconteudo'`.
+///
+/// O banco decide se acertou (trigger `respostas_preparar`) e, se errou, põe
+/// a questão na fila do SM-2 para amanhã (trigger `respostas_atualizar_fila`).
+/// Por isso a tela não calcula revisão nenhuma.
+///
+/// Em [previa] (microconteúdo ainda não publicado: autor ou revisor
+/// conferindo), nada é gravado.
 class QuestoesAluno extends StatefulWidget {
-  const QuestoesAluno({super.key, required this.idTopico});
+  const QuestoesAluno({
+    super.key,
+    required this.idMicroconteudo,
+    this.previa = false,
+  });
 
-  final String idTopico;
+  final int idMicroconteudo;
+  final bool previa;
 
   @override
   State<QuestoesAluno> createState() => _QuestoesAlunoState();
+}
+
+/// Uma alternativa lida do jsonb `questoes.alternativas`.
+class _Alternativa {
+  const _Alternativa(this.texto, this.feedback);
+
+  final String texto;
+  final String feedback;
+}
+
+/// Questão já convertida do formato do banco.
+class _Questao {
+  _Questao(Map<String, dynamic> linha)
+      : id = linha['id'] as int,
+        enunciado = (linha['enunciado'] ?? '').toString(),
+        correta = linha['correta'] as int? ?? -1,
+        alternativas = [
+          for (final a in (linha['alternativas'] as List? ?? []))
+            _Alternativa(
+              (a['texto'] ?? '').toString(),
+              (a['feedback'] ?? '').toString(),
+            ),
+        ];
+
+  final int id;
+  final String enunciado;
+  final int correta;
+  final List<_Alternativa> alternativas;
 }
 
 /// Resposta dada pelo aluno nesta rodada (usada na tela de resultado).
 class _Resposta {
   _Resposta(this.questao, this.escolhida);
 
-  final Map<String, dynamic> questao;
-  final String escolhida;
+  final _Questao questao;
+  final int escolhida;
 
-  String get correta => _letraCorreta(questao);
-  bool get acertou => escolhida == correta;
+  bool get acertou => escolhida == questao.correta;
 }
 
-String _letraCorreta(Map<String, dynamic> questao) =>
-    (questao['alt_correta'] ?? '').toString().trim().toLowerCase();
+/// Letra mostrada para a alternativa de índice [i] (0 → A, 1 → B...).
+String _letra(int i) => String.fromCharCode(65 + i);
 
 class _QuestoesAlunoState extends State<QuestoesAluno> {
-  static const _letras = ['a', 'b', 'c', 'd'];
-
-  late Future<List<Map<String, dynamic>>> _questoesFuture = _carregarQuestoes();
+  late Future<List<_Questao>> _questoesFuture = _carregarQuestoes();
 
   int _indice = 0;
-  String? _selecionada;
+  int? _selecionada;
   bool _confirmada = false;
   bool _salvando = false;
   bool _finalizado = false;
   final List<_Resposta> _respostas = [];
 
-  // Agendamento da próxima revisão (repetição espaçada) ao fim da rodada.
-  ResultadoRevisao? _revisao;
-  bool _registrandoRevisao = false;
-
-  Future<List<Map<String, dynamic>>> _carregarQuestoes() async {
+  Future<List<_Questao>> _carregarQuestoes() async {
     final dados = await Supabase.instance.client
         .from('questoes')
-        .select()
-        .eq('id_topico', widget.idTopico)
-        .order('id');
-    return List<Map<String, dynamic>>.from(dados);
+        .select('id, enunciado, alternativas, correta, ordem')
+        .eq('microconteudo_id', widget.idMicroconteudo)
+        .order('ordem');
+    return [for (final linha in dados) _Questao(linha)];
   }
 
-  Future<void> _confirmar(Map<String, dynamic> questao) async {
+  Future<void> _confirmar(_Questao questao) async {
     final escolhida = _selecionada;
     if (escolhida == null || _salvando) return;
+
+    if (widget.previa) {
+      setState(() {
+        _respostas.add(_Resposta(questao, escolhida));
+        _confirmada = true;
+      });
+      return;
+    }
 
     if (Supabase.instance.client.auth.currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -66,11 +107,12 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
 
     setState(() => _salvando = true);
     try {
-      // user_id, id_topico e "correta" são preenchidos no banco
-      // (ver supabase/respostas_aluno.sql), então o app só envia o essencial.
-      await Supabase.instance.client.from('respostas_aluno').insert({
-        'id_questao': questao['id'],
+      // aluno_id, acertou e respondida_em são preenchidos no banco
+      // (trigger respostas_preparar), então o app só envia o essencial.
+      await Supabase.instance.client.from('respostas').insert({
+        'questao_id': questao.id,
         'alternativa_escolhida': escolhida,
+        'contexto': 'microconteudo',
       });
 
       if (!mounted) return;
@@ -83,7 +125,9 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
       if (!mounted) return;
       setState(() => _salvando = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Não foi possível salvar sua resposta: $erro')),
+        const SnackBar(
+          content: Text('Não foi possível salvar sua resposta. Verifique a conexão.'),
+        ),
       );
     }
   }
@@ -91,7 +135,6 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
   void _proxima(int total) {
     if (_indice + 1 >= total) {
       setState(() => _finalizado = true);
-      _registrarRevisao();
       return;
     }
     setState(() {
@@ -101,32 +144,6 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
     });
   }
 
-  /// Ao terminar as questões, agenda a próxima revisão do tópico com o SM-2.
-  Future<void> _registrarRevisao() async {
-    final acertos = _respostas.where((r) => r.acertou).length;
-    final total = _respostas.length;
-
-    setState(() => _registrandoRevisao = true);
-    try {
-      final resultado = await RevisaoService.registrarResultado(
-        idTopico: widget.idTopico,
-        acertos: acertos,
-        total: total,
-      );
-      if (!mounted || !_finalizado) return;
-      setState(() {
-        _revisao = resultado;
-        _registrandoRevisao = false;
-      });
-    } catch (erro) {
-      if (!mounted) return;
-      setState(() => _registrandoRevisao = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Não foi possível agendar a revisão: $erro')),
-      );
-    }
-  }
-
   void _refazer() {
     setState(() {
       _indice = 0;
@@ -134,8 +151,6 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
       _confirmada = false;
       _finalizado = false;
       _respostas.clear();
-      _revisao = null;
-      _registrandoRevisao = false;
       _questoesFuture = _carregarQuestoes();
     });
   }
@@ -143,8 +158,10 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Questões')),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
+      appBar: AppBar(
+        title: Text(widget.previa ? 'Questões (prévia)' : 'Questões'),
+      ),
+      body: FutureBuilder<List<_Questao>>(
         future: _questoesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
@@ -152,7 +169,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
           }
           if (snapshot.hasError) {
             return _mensagem(
-              'Não foi possível carregar as questões.\n${snapshot.error}',
+              'Não foi possível carregar as questões. Verifique a conexão.',
               acao: FilledButton(
                 onPressed: () {
                   setState(() {
@@ -167,7 +184,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
           final questoes = snapshot.data ?? [];
           if (questoes.isEmpty) {
             return _mensagem(
-              'Este tópico ainda não tem questões.',
+              'Este conteúdo ainda não tem questões.',
               acao: FilledButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Voltar ao resumo'),
@@ -181,7 +198,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
     );
   }
 
-  Widget _buildQuestao(List<Map<String, dynamic>> questoes) {
+  Widget _buildQuestao(List<_Questao> questoes) {
     final questao = questoes[_indice];
     final ultima = _indice == questoes.length - 1;
 
@@ -196,17 +213,22 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                if (widget.previa) ...[
+                  _avisoPrevia(),
+                  const SizedBox(height: 12),
+                ],
                 Text(
                   'Questão ${_indice + 1} de ${questoes.length}',
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '${questao['enunciado']}',
+                  questao.enunciado,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 20),
-                for (final letra in _letras) _buildAlternativa(questao, letra),
+                for (var i = 0; i < questao.alternativas.length; i++)
+                  _buildAlternativa(questao, i),
               ],
             ),
           ),
@@ -235,15 +257,18 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
     );
   }
 
-  Widget _buildAlternativa(Map<String, dynamic> questao, String letra) {
-    final correta = _letraCorreta(questao);
-    final selecionada = _selecionada == letra;
+  /// Cartão da alternativa [i]. Depois de confirmar, pinta a correta de verde,
+  /// a escolhida errada de vermelho e mostra o feedback das duas.
+  Widget _buildAlternativa(_Questao questao, int i) {
+    final alternativa = questao.alternativas[i];
+    final selecionada = _selecionada == i;
+    final correta = i == questao.correta;
 
     Color? cor;
     IconData? icone;
     Color? corIcone;
     if (_confirmada) {
-      if (letra == correta) {
+      if (correta) {
         cor = AppTema.acertoSuave;
         icone = Icons.check_circle;
         corIcone = AppTema.acerto;
@@ -256,16 +281,26 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
       cor = Theme.of(context).colorScheme.primaryContainer;
     }
 
+    final mostrarFeedback = _confirmada &&
+        (selecionada || correta) &&
+        alternativa.feedback.trim().isNotEmpty;
+
     return Card(
       color: cor,
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         onTap: () {
           if (_confirmada || _salvando) return;
-          setState(() => _selecionada = letra);
+          setState(() => _selecionada = i);
         },
-        leading: CircleAvatar(radius: 14, child: Text(letra.toUpperCase())),
-        title: Text('${questao['alt_$letra']}'),
+        leading: CircleAvatar(radius: 14, child: Text(_letra(i))),
+        title: Text(alternativa.texto),
+        subtitle: mostrarFeedback
+            ? Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(alternativa.feedback),
+              )
+            : null,
         trailing: icone == null ? null : Icon(icone, color: corIcone),
       ),
     );
@@ -288,7 +323,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 12),
-                _buildAvisoRevisao(),
+                _buildAvisoRevisao(_respostas.length - acertos),
                 const SizedBox(height: 20),
                 for (var i = 0; i < _respostas.length; i++)
                   _buildItemResultado(i, _respostas[i]),
@@ -320,19 +355,17 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
     );
   }
 
-  /// Mostra quando o aluno deve revisar este tópico de novo.
-  Widget _buildAvisoRevisao() {
-    final revisao = _revisao;
+  /// Diz o que acontece com as erradas (o banco já as pôs na fila do SM-2).
+  Widget _buildAvisoRevisao(int erros) {
     final String texto;
-    if (_registrandoRevisao) {
-      texto = 'Agendando a próxima revisão...';
-    } else if (revisao == null) {
-      return const SizedBox.shrink();
-    } else if (revisao.atualizado) {
-      texto = 'Próxima revisão deste tópico: ${revisao.descricao}.';
+    if (widget.previa) {
+      texto = 'Prévia: as respostas não foram gravadas e nada entrou nas revisões.';
+    } else if (erros == 0) {
+      texto = 'Você acertou todas! Nenhuma questão entrou nas suas revisões.';
+    } else if (erros == 1) {
+      texto = '1 questão errada vai para as suas Revisões de amanhã.';
     } else {
-      texto = 'Esta rodada contou como prática extra. '
-          'Sua próxima revisão continua marcada: ${revisao.descricao}.';
+      texto = '$erros questões erradas vão para as suas Revisões de amanhã.';
     }
 
     return Card(
@@ -350,8 +383,27 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
     );
   }
 
+  Widget _avisoPrevia() {
+    return Card(
+      color: Theme.of(context).colorScheme.tertiaryContainer,
+      child: const Padding(
+        padding: EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.visibility),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text('Modo prévia: este conteúdo ainda não foi publicado, '
+                  'então as respostas não são gravadas.'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildItemResultado(int indice, _Resposta resposta) {
-    final escolhida = resposta.escolhida.toUpperCase();
+    final escolhida = _letra(resposta.escolhida);
     return Card(
       child: ListTile(
         leading: Icon(
@@ -359,14 +411,14 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
           color: resposta.acertou ? AppTema.acerto : Theme.of(context).colorScheme.error,
         ),
         title: Text(
-          '${indice + 1}. ${resposta.questao['enunciado']}',
+          '${indice + 1}. ${resposta.questao.enunciado}',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           resposta.acertou
               ? 'Sua resposta: $escolhida'
-              : 'Sua resposta: $escolhida · Correta: ${resposta.correta.toUpperCase()}',
+              : 'Sua resposta: $escolhida · Correta: ${_letra(resposta.questao.correta)}',
         ),
       ),
     );
