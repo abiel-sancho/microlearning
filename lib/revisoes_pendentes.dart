@@ -211,14 +211,26 @@ class _AvaliarConteudoState extends State<AvaliarConteudo> {
   }
 
   Future<Map<String, dynamic>?> _carregar() async {
-    return await _supabase
+    final micro = await _supabase
         .from('microconteudos')
         .select('id, titulo, status, objetivo, publico_alvo, pre_requisitos, '
             'tempo_estimado_min, referencias, nivel_bloom, dificuldade, '
             'topicos(codigo, titulo), '
-            'questoes(id, enunciado, alternativas, correta, ordem)')
+            'questoes(id, enunciado, alternativas, ordem)')
         .eq('id', widget.idMicroconteudo)
         .maybeSingle();
+    if (micro == null) return null;
+
+    // A alternativa correta não vem mais com a questão (migration 10): o
+    // revisor (professor da disciplina, conteúdo em revisão) e o admin a
+    // recebem pela função gabaritos().
+    final linhas = await _supabase
+        .rpc('gabaritos', params: {'p_microconteudo': widget.idMicroconteudo}) as List;
+    final gabarito = {for (final g in linhas) g['questao_id']: g['correta']};
+    for (final q in (micro['questoes'] as List? ?? const [])) {
+      (q as Map)['correta'] = gabarito[q['id']];
+    }
+    return micro;
   }
 
   bool get _tudoAvaliado => _notas.values.every((n) => n != null);

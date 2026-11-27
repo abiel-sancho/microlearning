@@ -253,7 +253,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
         .select('topico_id, autor_id, status, titulo, objetivo, publico_alvo, '
             'pre_requisitos, conteudo_central, exemplo, tempo_estimado_min, '
             'referencias, nivel_bloom, dificuldade, '
-            'questoes(id, enunciado, alternativas, correta, ordem)')
+            'questoes(id, enunciado, alternativas, ordem)')
         .eq('id', widget.idMicroconteudo!)
         .maybeSingle();
 
@@ -289,6 +289,17 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
 
     final questoes = List<Map<String, dynamic>>.from(micro['questoes'] as List? ?? [])
       ..sort((a, b) => (a['ordem'] as int).compareTo(b['ordem'] as int));
+
+    // A alternativa correta não vem mais com a questão (migration 10): o autor
+    // a recebe pela função gabaritos().
+    final gabarito = <int, int>{};
+    if (questoes.isNotEmpty) {
+      final linhas = await _supabase
+          .rpc('gabaritos', params: {'p_microconteudo': widget.idMicroconteudo!}) as List;
+      for (final g in linhas) {
+        gabarito[g['questao_id'] as int] = g['correta'] as int;
+      }
+    }
     _questoes
       ..clear()
       ..addAll([
@@ -297,7 +308,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
             'id': q['id'],
             'enunciado': q['enunciado'],
             'alternativas': q['alternativas'],
-            'correta': q['correta'],
+            'correta': gabarito[q['id']],
           },
       ]);
   }

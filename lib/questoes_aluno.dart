@@ -40,7 +40,6 @@ class _Questao {
   _Questao(Map<String, dynamic> linha)
       : id = linha['id'] as int,
         enunciado = (linha['enunciado'] ?? '').toString(),
-        correta = linha['correta'] as int? ?? -1,
         alternativas = [
           for (final a in (linha['alternativas'] as List? ?? []))
             _Alternativa(
@@ -51,18 +50,23 @@ class _Questao {
 
   final int id;
   final String enunciado;
-  final int correta;
   final List<_Alternativa> alternativas;
+
+  /// Índice da correta, vindo da função gabaritos() (migration 10): na prévia,
+  /// logo ao carregar; para o aluno, só depois que a resposta foi gravada.
+  /// -1 enquanto não se sabe.
+  int correta = -1;
 }
 
 /// Resposta dada pelo aluno nesta rodada (usada na tela de resultado).
 class _Resposta {
-  _Resposta(this.questao, this.escolhida);
+  _Resposta(this.questao, this.escolhida, this.acertou);
 
   final _Questao questao;
   final int escolhida;
 
-  bool get acertou => escolhida == questao.correta;
+  /// Para o aluno, decidido pelo banco (trigger respostas_preparar).
+  final bool acertou;
 }
 
 /// Fecha as telas abertas até a de Disciplinas (rota 'disciplinas', ver
@@ -104,7 +108,20 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
         .select('id, enunciado, alternativas, correta, ordem')
         .eq('microconteudo_id', widget.idMicroconteudo)
         .order('ordem');
-    return [for (final linha in dados) _Questao(linha)];
+    final questoes = [for (final linha in dados) _Questao(linha)];
+    // Na prévia (autor ou revisor), a função já libera todas as corretas.
+    if (widget.previa && questoes.isNotEmpty) await _lerGabarito(questoes);
+    return questoes;
+  }
+
+  /// Preenche `correta` nas questões que a função gabaritos() liberar.
+  Future<void> _lerGabarito(List<_Questao> questoes) async {
+    final linhas = await Supabase.instance.client
+        .rpc('gabaritos', params: {'p_microconteudo': widget.idMicroconteudo}) as List;
+    final gabarito = {for (final g in linhas) g['questao_id'] as int: g['correta'] as int};
+    for (final q in questoes) {
+      q.correta = gabarito[q.id] ?? q.correta;
+    }
   }
 
   Future<void> _confirmar(_Questao questao) async {
@@ -113,7 +130,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
 
     if (widget.previa) {
       setState(() {
-        _respostas.add(_Resposta(questao, escolhida));
+        _respostas.add(_Resposta(questao, escolhida, escolhida == questao.correta));
         _confirmada = true;
       });
       return;
@@ -130,15 +147,29 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
     try {
       // aluno_id, acertou e respondida_em são preenchidos no banco
       // (trigger respostas_preparar), então o app só envia o essencial.
-      await Supabase.instance.client.from('respostas').insert({
-        'questao_id': questao.id,
-        'alternativa_escolhida': escolhida,
-        'contexto': 'microconteudo',
-      });
+      // O select devolve o acerto decidido pelo banco.
+      final linha = await Supabase.instance.client
+          .from('respostas')
+          .insert({
+            'questao_id': questao.id,
+            'alternativa_escolhida': escolhida,
+            'contexto': 'microconteudo',
+          })
+          .select('acertou')
+          .single();
+      final acertou = linha['acertou'] as bool? ?? false;
+
+      // Agora que respondeu, a função libera a correta desta questão.
+      try {
+        await _lerGabarito([questao]);
+      } catch (erro) {
+        // Sem a correta, a tela mostra só o acerto ou o erro da escolhida.
+        debugPrint('Erro ao ler o gabarito: $erro');
+      }
 
       if (!mounted) return;
       setState(() {
-        _respostas.add(_Resposta(questao, escolhida));
+        _respostas.add(_Resposta(questao, escolhida, acertou));
         _confirmada = true;
         _salvando = false;
       });
@@ -445,7 +476,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
-          resposta.acertou
+          (resposta.acertou || resposta.questao.correta < 0)
               ? 'Sua resposta: $escolhida'
               : 'Sua resposta: $escolhida · Correta: ${_letra(resposta.questao.correta)}',
         ),
