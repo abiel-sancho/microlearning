@@ -3,7 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/disciplinas.dart';
 import 'package:testeapp/login.dart';
 import 'package:testeapp/painel_revisoes.dart';
+import 'package:testeapp/resumo.dart';
 import 'package:testeapp/revisoes_pendentes.dart';
+import 'package:testeapp/topicos.dart';
 
 class InicioScreen extends StatefulWidget {
   const InicioScreen({super.key});
@@ -19,6 +21,10 @@ class _InicioScreenState extends State<InicioScreen> {
   // Revisão espaçada (SM-2): questões vencidas hoje, pela função
   // `total_revisoes_de_hoje()`. Nulo enquanto carrega ou se falhar.
   int? _revisoesHoje;
+
+  // Busca por código (CLAUDE.md 5.2): microconteúdo ou tópico.
+  final _codigoController = TextEditingController();
+  bool _buscando = false;
 
   // Dados da tabela perfis (fonte oficial do nome e do papel).
   String? _nomePerfil;
@@ -36,6 +42,103 @@ class _InicioScreenState extends State<InicioScreen> {
     super.initState();
     _carregarPerfil();
     _carregarRevisoesHoje();
+  }
+
+  @override
+  void dispose() {
+    _codigoController.dispose();
+    super.dispose();
+  }
+
+  /// Ajeita o que foi digitado: maiúsculas, espaço/ponto/sublinhado viram
+  /// hífen e unidade/tópico ganham o zero à esquerda ("his 3 4 2" →
+  /// "HIS-03-04-2"). Devolve nulo se não tiver o formato de código.
+  static String? _normalizarCodigo(String texto) {
+    final limpo = texto
+        .trim()
+        .toUpperCase()
+        .replaceAll(RegExp(r'[\s._]+'), '-')
+        .replaceAll(RegExp(r'-+'), '-');
+    final partes = RegExp(r'^([A-Z]{3})-(\d{1,2})-(\d{1,2})(?:-(\d+))?$').firstMatch(limpo);
+    if (partes == null) return null;
+    final topico =
+        '${partes[1]}-${partes[2]!.padLeft(2, '0')}-${partes[3]!.padLeft(2, '0')}';
+    final seq = partes[4];
+    return seq == null ? topico : '$topico-${int.parse(seq)}';
+  }
+
+  /// Código de microconteúdo (SIGLA-UU-TT-N) abre a leitura; código de tópico
+  /// (SIGLA-UU-TT) abre os tópicos da disciplina. O RLS vale normalmente:
+  /// o aluno só encontra conteúdo publicado.
+  Future<void> _buscarCodigo() async {
+    if (_buscando) return;
+    final mensageiro = ScaffoldMessenger.of(context);
+    final codigo = _normalizarCodigo(_codigoController.text);
+    if (codigo == null) {
+      mensageiro.showSnackBar(const SnackBar(
+        content: Text('O código tem o formato HIS-03-04-2 (conteúdo) ou HIS-03-04 (tópico).'),
+      ));
+      return;
+    }
+    _codigoController.text = codigo;
+    final ehTopico = codigo.split('-').length == 3;
+
+    setState(() => _buscando = true);
+    try {
+      if (ehTopico) {
+        final topico = await _supabase
+            .from('topicos')
+            .select('id, unidades(disciplina_id)')
+            .eq('codigo', codigo)
+            .maybeSingle();
+        if (!mounted) return;
+        final idDisciplina = (topico?['unidades'] as Map?)?['disciplina_id'];
+        if (idDisciplina == null) {
+          mensageiro.showSnackBar(SnackBar(
+            content: Text('Nenhum tópico com o código $codigo. Confira com seu professor.'),
+          ));
+          return;
+        }
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Topicos(idDisciplina: idDisciplina.toString()),
+          ),
+        );
+      } else {
+        // Arquivado não conta (o código é único entre os não arquivados).
+        final micro = await _supabase
+            .from('microconteudos')
+            .select('id')
+            .eq('codigo', codigo)
+            .neq('status', 'arquivado')
+            .maybeSingle();
+        if (!mounted) return;
+        if (micro == null) {
+          mensageiro.showSnackBar(SnackBar(
+            content: Text('Nenhum conteúdo disponível com o código $codigo. '
+                'Confira com seu professor.'),
+          ));
+          return;
+        }
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Resumo(idMicroconteudo: micro['id'].toString()),
+          ),
+        );
+      }
+      // Ao voltar, o aluno pode ter respondido questões.
+      if (mounted) _carregarRevisoesHoje();
+    } catch (erro, pilha) {
+      debugPrint('Erro na busca por código: $erro\n$pilha');
+      if (!mounted) return;
+      mensageiro.showSnackBar(const SnackBar(
+        content: Text('Não foi possível buscar agora. Verifique a conexão.'),
+      ));
+    } finally {
+      if (mounted) setState(() => _buscando = false);
+    }
   }
 
   /// Conta as questões vencidas hoje (revisão espaçada, SM-2).
@@ -194,6 +297,8 @@ class _InicioScreenState extends State<InicioScreen> {
           const SizedBox(height: 24),
           _cartaoRevisoesDeHoje(context),
           const SizedBox(height: 24),
+          _cartaoBuscaCodigo(context),
+          const SizedBox(height: 24),
           if (_revisaConteudo) ...[
             _cartaoRevisaoPorPares(context),
             const SizedBox(height: 24),
@@ -243,6 +348,54 @@ class _InicioScreenState extends State<InicioScreen> {
               child: FilledButton.tonal(
                 onPressed: _irParaRevisoesDeHoje,
                 child: const Text('Abrir'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Cartão "Tem um código?": o professor passa o código e o aluno digita aqui.
+  Widget _cartaoBuscaCodigo(BuildContext context) {
+    final tema = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.qr_code_2, color: tema.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Tem um código?', style: tema.textTheme.titleMedium),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _codigoController,
+              textCapitalization: TextCapitalization.characters,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _buscarCodigo(),
+              decoration: InputDecoration(
+                hintText: 'Ex.: HIS-03-04-2',
+                border: const OutlineInputBorder(),
+                isDense: true,
+                suffixIcon: _buscando
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : IconButton(
+                        tooltip: 'Buscar',
+                        icon: const Icon(Icons.search),
+                        onPressed: _buscarCodigo,
+                      ),
               ),
             ),
           ],
