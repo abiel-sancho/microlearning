@@ -111,7 +111,11 @@ class _InicioScreenState extends State<InicioScreen> {
 
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => Disciplinas()),
+      MaterialPageRoute(
+        // Nome usado pelo atalho "Ir para Disciplinas" (questoes_aluno.dart).
+        settings: const RouteSettings(name: 'disciplinas'),
+        builder: (context) => Disciplinas(),
+      ),
     );
 
     // Ao voltar, o aluno pode ter respondido questões: atualiza o painel.

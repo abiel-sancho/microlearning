@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:testeapp/disciplinas.dart';
 import 'package:testeapp/tema.dart';
 
 /// Mostra ao aluno, uma por vez, as questões de um microconteúdo (tabela
@@ -142,6 +143,26 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
       _selecionada = null;
       _confirmada = false;
     });
+  }
+
+  /// Fecha as telas abertas até a de Disciplinas (rota 'disciplinas', ver
+  /// inicio.dart). Se ela não estiver aberta (veio de Meus conteúdos ou das
+  /// revisões), volta ao Início e abre Disciplinas.
+  void _irParaDisciplinas() {
+    final navegador = Navigator.of(context);
+    var achou = false;
+    navegador.popUntil((rota) {
+      if (rota.settings.name == 'disciplinas') achou = true;
+      return achou || rota.isFirst;
+    });
+    if (!achou) {
+      navegador.push(
+        MaterialPageRoute(
+          settings: const RouteSettings(name: 'disciplinas'),
+          builder: (_) => const Disciplinas(),
+        ),
+      );
+    }
   }
 
   void _refazer() {
@@ -331,7 +352,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Row(
               children: [
                 Expanded(
@@ -348,6 +369,14 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
                   ),
                 ),
               ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: TextButton.icon(
+              onPressed: _irParaDisciplinas,
+              icon: const Icon(Icons.menu_book),
+              label: const Text('Ir para Disciplinas'),
             ),
           ),
         ],
