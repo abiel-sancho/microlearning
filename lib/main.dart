@@ -77,12 +77,21 @@ class _MyAppState extends State<MyApp> {
       // Telas largas (computador, navegador): o app fica numa coluna
       // centralizada de até 1000 px, com a barra do topo e os diálogos
       // juntos. No celular, a largura é a da tela e nada muda.
+      //
+      // Área segura (etapa 34): nenhuma tela fica embaixo da barra de gestos
+      // ou dos botões do sistema (Android 15 desenha o app até a borda). Só
+      // embaixo e nas laterais: em cima, a barra do topo de cada tela já se
+      // afasta da barra de status e continua colorida até a borda. A faixa
+      // de baixo fica na cor de fundo das telas.
       builder: (context, child) => ColoredBox(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: larguraMaximaDoApp),
-            child: child,
+            child: ColoredBox(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              child: SafeArea(top: false, child: child!),
+            ),
           ),
         ),
       ),
