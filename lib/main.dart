@@ -22,6 +22,9 @@ void main() async {
 }
 
 
+/// Largura máxima do app em telas largas (professor no computador).
+const double larguraMaximaDoApp = 1000;
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -71,6 +74,18 @@ class _MyAppState extends State<MyApp> {
       title: 'MicroLearning App',
 
       theme: AppTema.claro,
+      // Telas largas (computador, navegador): o app fica numa coluna
+      // centralizada de até 1000 px, com a barra do topo e os diálogos
+      // juntos. No celular, a largura é a da tela e nada muda.
+      builder: (context, child) => ColoredBox(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: larguraMaximaDoApp),
+            child: child,
+          ),
+        ),
+      ),
       home: logado ? const InicioScreen() : const Login(),
     );
   }

@@ -1,11 +1,11 @@
 {
-    "name": "testeapp",
-    "short_name": "testeapp",
+    "name": "MicroLearning App",
+    "short_name": "MicroLearning",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "MicroLearning App: microconteúdos do IFCE Campus Jaguaribe.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
