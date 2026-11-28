@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12 ou mais novo: a tela de abertura é desenhada pelo sistema
+         (ícone do app no centro). Aqui ela ganha o fundo violeta do app
+         (etapa 39). Abaixo do Android 12 vale o launch_background.xml. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_fundo</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/logoapp</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

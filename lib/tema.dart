@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
-/// Visual do app (Material 3): roxo e azul em tons suaves, puxados para o cinza.
+/// Visual do app (Material 3): violeta vivo (esquema de referência do
+/// Material 3, etapa 39). Antes: roxo e azul suaves, puxados para o cinza.
 ///
 /// Cores e estilos ficam todos aqui para as telas seguirem o mesmo padrão e o
 /// visual poder ser ajustado em um só lugar. As telas só precisam de
@@ -14,46 +15,51 @@ class AppTema {
   static const Color acerto = Color(0xFF4F7D68);
   static const Color acertoSuave = Color(0xFFDDEBE3);
 
+  /// Esquema claro de referência do Material 3 (semente violeta #6750A4,
+  /// etapa 39), no lugar do roxo acinzentado anterior (#6E659B). São os
+  /// valores oficiais do Material 3, com contraste validado em cada par
+  /// fundo/texto. O vermelho de erro continua o do app.
   static const ColorScheme _cores = ColorScheme(
     brightness: Brightness.light,
-    // Roxo acinzentado: botões, destaques e títulos.
-    primary: Color(0xFF6E659B),
+    // Violeta vivo: botões, destaques e títulos.
+    primary: Color(0xFF6750A4),
     onPrimary: Color(0xFFFFFFFF),
-    primaryContainer: Color(0xFFE6E2F2),
-    onPrimaryContainer: Color(0xFF2E2950),
-    // Azul acinzentado: ação flutuante, selos e cartões de disciplina.
-    secondary: Color(0xFF56738F),
+    primaryContainer: Color(0xFFEADDFF),
+    onPrimaryContainer: Color(0xFF21005D),
+    // Lilás acinzentado: apoio (cartões de questão, títulos menores).
+    secondary: Color(0xFF625B71),
     onSecondary: Color(0xFFFFFFFF),
-    secondaryContainer: Color(0xFFDDE6F0),
-    onSecondaryContainer: Color(0xFF22344A),
-    tertiary: Color(0xFF6A74A3),
+    secondaryContainer: Color(0xFFE8DEF8),
+    onSecondaryContainer: Color(0xFF1D192B),
+    // Rosado: terceira cor do Material 3.
+    tertiary: Color(0xFF7D5260),
     onTertiary: Color(0xFFFFFFFF),
-    tertiaryContainer: Color(0xFFE3E5F3),
-    onTertiaryContainer: Color(0xFF2A2F52),
-    // Vermelho queimado e suave, para erros.
+    tertiaryContainer: Color(0xFFFFD8E4),
+    onTertiaryContainer: Color(0xFF31111D),
+    // Vermelho queimado e suave, para erros (igual a antes).
     error: Color(0xFFA4515F),
     onError: Color(0xFFFFFFFF),
     errorContainer: Color(0xFFF3DDE1),
     onErrorContainer: Color(0xFF4A1D27),
-    // Fundos e superfícies em cinza-lavanda bem claro.
-    surface: Color(0xFFF6F5FA),
-    onSurface: Color(0xFF2C2B36),
-    onSurfaceVariant: Color(0xFF5E5B6E),
-    surfaceDim: Color(0xFFDEDCE6),
-    surfaceBright: Color(0xFFFAF9FD),
+    // Fundos e superfícies: branco levemente tingido de violeta.
+    surface: Color(0xFFFEF7FF),
+    onSurface: Color(0xFF1D1B20),
+    onSurfaceVariant: Color(0xFF49454F),
+    surfaceDim: Color(0xFFDED8E1),
+    surfaceBright: Color(0xFFFEF7FF),
     surfaceContainerLowest: Color(0xFFFFFFFF),
-    surfaceContainerLow: Color(0xFFFAF9FD),
-    surfaceContainer: Color(0xFFF0EEF6),
-    surfaceContainerHigh: Color(0xFFEAE8F2),
-    surfaceContainerHighest: Color(0xFFE4E1EE),
-    outline: Color(0xFF8B889C),
-    outlineVariant: Color(0xFFD3D0DF),
+    surfaceContainerLow: Color(0xFFF7F2FA),
+    surfaceContainer: Color(0xFFF3EDF7),
+    surfaceContainerHigh: Color(0xFFECE6F0),
+    surfaceContainerHighest: Color(0xFFE6E0E9),
+    outline: Color(0xFF79747E),
+    outlineVariant: Color(0xFFCAC4D0),
     shadow: Color(0xFF000000),
     scrim: Color(0xFF000000),
-    inverseSurface: Color(0xFF3A3750),
-    onInverseSurface: Color(0xFFF1EFF7),
-    inversePrimary: Color(0xFFCBC4EC),
-    surfaceTint: Color(0xFF6E659B),
+    inverseSurface: Color(0xFF322F35),
+    onInverseSurface: Color(0xFFF5EFF7),
+    inversePrimary: Color(0xFFD0BCFF),
+    surfaceTint: Color(0xFF6750A4),
   );
 
   static ThemeData get claro {
@@ -130,9 +136,11 @@ class AppTema {
           shape: formaBotao,
         ),
       ),
+      // Botão flutuante (salvar) no violeta principal: com o lilás
+      // acinzentado do "secondary" ele ficava apagado.
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: cores.secondary,
-        foregroundColor: cores.onSecondary,
+        backgroundColor: cores.primary,
+        foregroundColor: cores.onPrimary,
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
@@ -156,8 +164,8 @@ class AppTema {
         iconColor: cores.primary,
         textColor: cores.onSurface,
       ),
-      drawerTheme: const DrawerThemeData(
-        backgroundColor: Color(0xFFF6F5FA),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: cores.surface,
         surfaceTintColor: Colors.transparent,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
@@ -185,8 +193,8 @@ class AppTema {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       badgeTheme: BadgeThemeData(
-        backgroundColor: cores.secondary,
-        textColor: cores.onSecondary,
+        backgroundColor: cores.primary,
+        textColor: cores.onPrimary,
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: cores.primary,
