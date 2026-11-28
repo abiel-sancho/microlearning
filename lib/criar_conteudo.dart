@@ -50,15 +50,15 @@ class _Campo {
 final List<_Campo> _camposReserva = [
   _Campo('titulo', 'Título', 'Até 60 caracteres. Diga o assunto de forma direta.', null, true, 1),
   _Campo('objetivo', 'Objetivo de aprendizagem', 'Um único objetivo, começando por um verbo da taxonomia de Bloom.', null, true, 2),
-  _Campo('publico_alvo', 'Público-alvo', 'Para quem é o conteúdo.', null, true, 3),
-  _Campo('pre_requisitos', 'Pré-requisitos', 'Até 3 conhecimentos que o aluno precisa ter antes.', null, false, 4),
-  _Campo('conteudo_central', 'Conteúdo central', 'Uma ideia só.', null, true, 5),
-  _Campo('exemplo', 'Exemplo contextualizado e resolvido', 'Opcional.', null, false, 6),
-  _Campo('questoes', 'Questões', 'De 2 a 5 questões, com feedback em cada alternativa.', null, true, 7),
-  _Campo('tempo_estimado_min', 'Tempo estimado', 'Em minutos, no máximo 10.', null, true, 8),
-  _Campo('referencias', 'Referências', 'Ao menos uma fonte confiável.', null, true, 9),
-  _Campo('nivel_bloom', 'Nível de Bloom', 'lembrar, entender, aplicar, analisar, avaliar ou criar.', null, true, 10),
-  _Campo('dificuldade', 'Dificuldade', 'facil, media ou dificil.', null, true, 11),
+  _Campo('nivel_bloom', 'Nível de Bloom', 'lembrar, entender, aplicar, analisar, avaliar ou criar.', null, true, 3),
+  _Campo('dificuldade', 'Dificuldade', 'facil, media ou dificil.', null, true, 4),
+  _Campo('publico_alvo', 'Público-alvo', 'Para quem é o conteúdo.', null, true, 5),
+  _Campo('pre_requisitos', 'Pré-requisitos', 'Até 3 conhecimentos que o aluno precisa ter antes.', null, false, 6),
+  _Campo('tempo_estimado_min', 'Tempo estimado', 'Em minutos, no máximo 10.', null, true, 7),
+  _Campo('conteudo_central', 'Conteúdo central', 'Uma ideia só.', null, true, 8),
+  _Campo('exemplo', 'Exemplo contextualizado e resolvido', 'Opcional.', null, false, 9),
+  _Campo('questoes', 'Questões', 'De 2 a 5 questões, com feedback em cada alternativa.', null, true, 10),
+  _Campo('referencias', 'Referências', 'Ao menos uma fonte confiável.', null, true, 11),
 ];
 
 /// Disciplinas em que a pessoa pode criar, com unidades e tópicos.
