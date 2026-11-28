@@ -145,42 +145,14 @@ class _ResumoState extends State<Resumo> {
   Future<void> _reportarErro() async {
     final id = _micro?['id'];
     if (id == null) return;
-    final texto = TextEditingController();
+    // O diálogo é um widget próprio: ele cria o controlador do texto e só o
+    // apaga quando sai de vez da tela (depois da animação de fechar). Apagar
+    // aqui, logo depois do showDialog, dava a tela vermelha
+    // "'_dependents.isEmpty': is not true" (etapa 30).
     final descricao = await showDialog<String>(
       context: context,
-      builder: (contexto) => StatefulBuilder(
-        builder: (contexto, atualizar) {
-          final valido = texto.text.trim().isNotEmpty;
-          return AlertDialog(
-            title: const Text('Reportar erro'),
-            content: TextField(
-              controller: texto,
-              autofocus: true,
-              maxLength: 1000,
-              minLines: 3,
-              maxLines: 6,
-              onChanged: (_) => atualizar(() {}),
-              decoration: const InputDecoration(
-                labelText: 'O que está errado?',
-                hintText: 'Ex.: a data da Lei Áurea no 2º parágrafo está errada.',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(contexto),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: valido ? () => Navigator.pop(contexto, texto.text.trim()) : null,
-                child: const Text('Enviar'),
-              ),
-            ],
-          );
-        },
-      ),
+      builder: (contexto) => const _DialogoReporte(),
     );
-    texto.dispose();
     if (descricao == null || descricao.isEmpty || !mounted) return;
 
     final mensageiro = ScaffoldMessenger.of(context);
@@ -400,6 +372,55 @@ class _ResumoState extends State<Resumo> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Diálogo "Reportar erro": devolve o texto digitado (ou nulo, se cancelar).
+class _DialogoReporte extends StatefulWidget {
+  const _DialogoReporte();
+
+  @override
+  State<_DialogoReporte> createState() => _DialogoReporteState();
+}
+
+class _DialogoReporteState extends State<_DialogoReporte> {
+  final _texto = TextEditingController();
+
+  @override
+  void dispose() {
+    _texto.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final valido = _texto.text.trim().isNotEmpty;
+    return AlertDialog(
+      title: const Text('Reportar erro'),
+      content: TextField(
+        controller: _texto,
+        autofocus: true,
+        maxLength: 1000,
+        minLines: 3,
+        maxLines: 6,
+        onChanged: (_) => setState(() {}),
+        decoration: const InputDecoration(
+          labelText: 'O que está errado?',
+          hintText: 'Ex.: a data da Lei Áurea no 2º parágrafo está errada.',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: valido ? () => Navigator.pop(context, _texto.text.trim()) : null,
+          child: const Text('Enviar'),
+        ),
+      ],
     );
   }
 }
