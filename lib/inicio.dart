@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:testeapp/cores_disciplina.dart';
+import 'package:testeapp/icones_disciplina.dart';
 import 'package:testeapp/disciplinas.dart';
 import 'package:testeapp/login.dart';
 import 'package:testeapp/painel_revisoes.dart';
@@ -38,6 +40,10 @@ class _InicioScreenState extends State<InicioScreen> {
 
   // Reportes de erro abertos (professor: dos próprios conteúdos; admin: todos).
   int? _reportesAbertos;
+
+  // "Minhas disciplinas" (etapa 36): professor, as vinculadas a ele; aluno e
+  // admin, as que já estudaram (responderam questões). Nulo enquanto carrega.
+  List<Map<String, dynamic>>? _minhasDisciplinas;
 
   bool get _revisaConteudo => _papel == 'professor' || _papel == 'admin';
 
@@ -182,9 +188,87 @@ class _InicioScreenState extends State<InicioScreen> {
       });
       _carregarFilaRevisao();
       _carregarReportes();
+      _carregarMinhasDisciplinas();
     } catch (erro, pilha) {
       // Sem o perfil, a tela continua funcionando com o nome do cadastro.
       debugPrint('Erro ao carregar o perfil: $erro\n$pilha');
+    }
+  }
+
+  /// "Minhas disciplinas": professor, as de `professor_disciplinas`; aluno e
+  /// admin, as das últimas questões respondidas (a mais recente primeiro).
+  Future<void> _carregarMinhasDisciplinas() async {
+    final usuario = _usuario;
+    if (usuario == null) return;
+    try {
+      final lista = <Map<String, dynamic>>[];
+      if (_papel == 'professor') {
+        final linhas = await _supabase
+            .from('professor_disciplinas')
+            .select('disciplinas(id, sigla, nome)')
+            .eq('professor_id', usuario.id);
+        for (final l in linhas) {
+          final d = l['disciplinas'];
+          if (d is Map) lista.add(Map<String, dynamic>.from(d));
+        }
+        lista.sort((a, b) => (a['id'] as int).compareTo(b['id'] as int));
+      } else {
+        // 1) Microconteúdos das últimas respostas. De `questoes` só vem
+        //    `microconteudo_id`, uma das colunas liberadas pela migration 10.
+        final respostas = await _supabase
+            .from('respostas')
+            .select('questoes(microconteudo_id)')
+            .eq('aluno_id', usuario.id)
+            .order('respondida_em', ascending: false)
+            .limit(300);
+        final micros = <int>[];
+        for (final r in respostas) {
+          final id = (r['questoes'] as Map?)?['microconteudo_id'] as int?;
+          if (id != null && !micros.contains(id)) micros.add(id);
+        }
+        // 2) Disciplina de cada microconteúdo, na ordem do mais recente.
+        if (micros.isNotEmpty) {
+          final linhas = await _supabase
+              .from('microconteudos')
+              .select('id, topicos(unidades(disciplinas(id, sigla, nome)))')
+              .inFilter('id', micros);
+          final disciplinaDoMicro = <int, Map<String, dynamic>>{};
+          for (final m in linhas) {
+            final d = m['topicos']?['unidades']?['disciplinas'];
+            if (d is Map) disciplinaDoMicro[m['id'] as int] = Map<String, dynamic>.from(d);
+          }
+          for (final id in micros) {
+            final d = disciplinaDoMicro[id];
+            if (d != null && !lista.any((x) => x['id'] == d['id'])) lista.add(d);
+          }
+        }
+      }
+      if (!mounted) return;
+      setState(() => _minhasDisciplinas = lista);
+    } catch (erro, pilha) {
+      // Sem a lista, o cartão mostra só o caminho por "Ir para Disciplinas".
+      debugPrint('Erro ao carregar minhas disciplinas: $erro\n$pilha');
+      if (mounted) setState(() => _minhasDisciplinas = const []);
+    }
+  }
+
+  /// Abre direto as unidades e tópicos da disciplina.
+  Future<void> _abrirDisciplina(Map<String, dynamic> disciplina) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Topicos(
+          idDisciplina: disciplina['id'].toString(),
+          sigla: disciplina['sigla'] as String?,
+        ),
+      ),
+    );
+    // Igual ao "Ir para Disciplinas": pode ter estudado ou revisado.
+    if (mounted) {
+      _carregarRevisoesHoje();
+      _carregarFilaRevisao();
+      _carregarReportes();
+      _carregarMinhasDisciplinas();
     }
   }
 
@@ -280,6 +364,7 @@ class _InicioScreenState extends State<InicioScreen> {
       _carregarRevisoesHoje();
       _carregarFilaRevisao();
       _carregarReportes();
+      _carregarMinhasDisciplinas();
     }
   }
 
@@ -331,6 +416,8 @@ class _InicioScreenState extends State<InicioScreen> {
             Center(child: Chip(label: Text(rotuloPapel))),
           ],
           const SizedBox(height: 24),
+          _cartaoMinhasDisciplinas(context),
+          const SizedBox(height: 24),
           _cartaoRevisoesDeHoje(context),
           const SizedBox(height: 24),
           _cartaoBuscaCodigo(context),
@@ -346,6 +433,78 @@ class _InicioScreenState extends State<InicioScreen> {
             child: const Text('Ir para Disciplinas'),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Cartão "Minhas disciplinas": atalhos coloridos que abrem as unidades.
+  Widget _cartaoMinhasDisciplinas(BuildContext context) {
+    final tema = Theme.of(context);
+    final lista = _minhasDisciplinas;
+    final ehProfessor = _papel == 'professor';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.bookmark_outline, color: tema.colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Minhas disciplinas', style: tema.textTheme.titleMedium)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              ehProfessor ? 'As disciplinas em que você atua.' : 'As que você estudou por último.',
+              style: tema.textTheme.bodySmall?.copyWith(color: tema.colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            if (lista == null)
+              const Center(child: CircularProgressIndicator())
+            else if (lista.isEmpty)
+              Text(ehProfessor
+                  ? 'Você ainda não está vinculado a nenhuma disciplina.'
+                  : 'As disciplinas que você estudar aparecem aqui. '
+                      'Comece por "Ir para Disciplinas".')
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [for (final d in lista) _atalhoDisciplina(context, d)],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Atalho de uma disciplina, na cor dela (etapa 35). Fundo e texto são o par
+  /// primaryContainer / onPrimaryContainer, com contraste garantido.
+  Widget _atalhoDisciplina(BuildContext context, Map<String, dynamic> disciplina) {
+    final cores = esquemaDaDisciplina(disciplina['sigla']) ?? Theme.of(context).colorScheme;
+    return Material(
+      color: cores.primaryContainer,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _abrirDisciplina(disciplina),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(iconeDaDisciplina(disciplina), size: 20, color: cores.onPrimaryContainer),
+              const SizedBox(width: 8),
+              Text(
+                (disciplina['nome'] ?? '').toString(),
+                style: TextStyle(color: cores.onPrimaryContainer, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
