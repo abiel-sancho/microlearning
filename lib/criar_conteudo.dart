@@ -61,6 +61,15 @@ final List<_Campo> _camposReserva = [
   _Campo('referencias', 'Referências', 'Ao menos uma fonte confiável.', null, true, 11),
 ];
 
+/// Validação do link no diálogo do editor (etapa 38). `true` para endereço de
+/// site com ou sem protocolo (`https://youtube.com/...` ou `youtube.com/...`);
+/// `null` devolve a decisão ao Quill (que aceita `mailto:`, `tel:` etc.).
+bool? _linkAceito(String link) {
+  final texto = link.trim();
+  final site = RegExp(r'^(https?://)?[\w-]+(\.[\w-]+)+(:\d+)?([/?#]\S*)?$', caseSensitive: false);
+  return site.hasMatch(texto) ? true : null;
+}
+
 /// Disciplinas em que a pessoa pode criar, com unidades e tópicos.
 class _Opcoes {
   _Opcoes(this.papel, this.disciplinas, this.campos);
@@ -874,6 +883,12 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
           config: QuillSimpleToolbarConfig(
             // Imagem (galeria → Storage) e link (botão padrão do Quill): M2.5.
             embedButtons: botoesDeImagem(),
+            // Link: aceita também endereço sem "https://" (ex.: youtube.com),
+            // que o diálogo padrão do Quill recusava (etapa 38). A leitura
+            // completa o https:// antes de abrir (quill_midia.dart).
+            buttonOptions: const QuillSimpleToolbarButtonOptions(
+              linkStyle: QuillToolbarLinkStyleButtonOptions(validateLink: _linkAceito),
+            ),
             showBackgroundColorButton: false,
             showAlignmentButtons: false,
             showFontFamily: false,
