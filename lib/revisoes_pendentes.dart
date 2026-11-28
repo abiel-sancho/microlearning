@@ -362,6 +362,9 @@ class _AvaliarConteudoState extends State<AvaliarConteudo> {
               _titulo(context, 'Questões'),
               ..._questoes(context, micro),
               const SizedBox(height: 24),
+              _titulo(context, 'Referências'),
+              _referencias(context, micro),
+              const SizedBox(height: 24),
               _titulo(context, 'Rubrica'),
               for (final c in _criterios) _criterio(context, c),
               const SizedBox(height: 8),
@@ -404,7 +407,6 @@ class _AvaliarConteudoState extends State<AvaliarConteudo> {
     final tema = Theme.of(context);
     final topico = micro['topicos'] as Map<String, dynamic>?;
     final preRequisitos = [for (final p in (micro['pre_requisitos'] as List? ?? const [])) '$p'];
-    final referencias = [for (final r in (micro['referencias'] as List? ?? const [])) '$r'];
     final tempo = micro['tempo_estimado_min'];
 
     Widget linha(String rotulo, String? valor) => Padding(
@@ -426,15 +428,37 @@ class _AvaliarConteudoState extends State<AvaliarConteudo> {
             Text('${topico['codigo']} · ${topico['titulo']}',
                 style: tema.textTheme.bodySmall
                     ?.copyWith(color: tema.colorScheme.onSurfaceVariant)),
+          // Mesma sequência do formulário (etapa 27): a ficha primeiro; as
+          // referências vêm depois das questões, como no formulário.
           linha('Objetivo', micro['objetivo'] as String?),
-          linha('Público-alvo', micro['publico_alvo'] as String?),
-          linha('Pré-requisitos', preRequisitos.join('; ')),
           linha('Nível de Bloom', _bloom[micro['nivel_bloom']]),
           linha('Dificuldade', _dificuldades[micro['dificuldade']]),
+          linha('Público-alvo', micro['publico_alvo'] as String?),
+          linha('Pré-requisitos', preRequisitos.join('; ')),
           linha('Tempo estimado', tempo == null ? null : '$tempo min'),
-          linha('Referências', referencias.join('; ')),
         ],
       ),
+    );
+  }
+
+  /// Referências numa seção própria, depois das questões (ordem do formulário).
+  Widget _referencias(BuildContext context, Map<String, dynamic> micro) {
+    final referencias = [for (final r in (micro['referencias'] as List? ?? const [])) '$r'];
+    return Container(
+      decoration: AppTema.cartao(context),
+      padding: const EdgeInsets.all(12),
+      child: referencias.isEmpty
+          ? const Text('—')
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final r in referencias)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• $r'),
+                  ),
+              ],
+            ),
     );
   }
 
