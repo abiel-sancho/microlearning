@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/questoes_aluno.dart';
+import 'package:testeapp/quill_midia.dart';
 import 'package:testeapp/tema.dart';
 
 /// Leitura de um microconteúdo (tabela `microconteudos`).
@@ -341,10 +342,14 @@ class _ResumoState extends State<Resumo> {
   Widget _leitorQuill(QuillController controller) {
     return QuillEditor.basic(
       controller: controller,
-      config: const QuillEditorConfig(
+      config: QuillEditorConfig(
         scrollable: false, // a lista da tela já rola
         showCursor: false,
         expands: false,
+        // Imagens e links (M2.5): os mesmos desenhos do editor; o link pede
+        // confirmação antes de sair do app.
+        embedBuilders: embedsDeImagem(),
+        onLaunchUrl: (link) => abrirLinkComConfirmacao(context, link),
       ),
     );
   }

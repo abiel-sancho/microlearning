@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:testeapp/quill_midia.dart';
 import 'package:testeapp/criar_questao.dart';
 import 'package:testeapp/tema.dart';
 
@@ -868,7 +869,9 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
       children: [
         QuillSimpleToolbar(
           controller: controller,
-          config: const QuillSimpleToolbarConfig(
+          config: QuillSimpleToolbarConfig(
+            // Imagem (galeria → Storage) e link (botão padrão do Quill): M2.5.
+            embedButtons: botoesDeImagem(),
             showBackgroundColorButton: false,
             showAlignmentButtons: false,
             showFontFamily: false,
@@ -892,6 +895,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
               focusNode: foco,
               scrollController: rolagem,
               config: QuillEditorConfig(
+                embedBuilders: embedsDeImagem(),
                 placeholder: dica,
                 scrollable: false, // a tela inteira já rola
                 minHeight: 160,
