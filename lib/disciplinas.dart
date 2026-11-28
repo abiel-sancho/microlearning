@@ -142,12 +142,13 @@ class _DisciplinasState extends State<Disciplinas> {
               MaterialPageRoute(builder: (context) => Configuracoes()),
             );
           }
-          // index 2 (Favoritos): ainda sem ação. Pendente de decisão.
         },
+        // Favoritos saiu (etapa 37, pedido da responsável em 28/11/2026): o
+        // botão não tinha ação e o "Minhas disciplinas" do Início já leva
+        // direto às disciplinas da pessoa. A barra será revista depois.
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Configurações"),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: "Favoritos"),
         ],
       ),
       body: FutureBuilder<List<_GrupoArea>>(
