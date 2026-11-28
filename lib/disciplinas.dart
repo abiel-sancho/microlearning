@@ -26,6 +26,22 @@ class _GrupoArea {
   final List<Map<String, dynamic>> disciplinas = [];
 }
 
+/// Grade de Disciplinas por faixa de largura (Material 3, window size
+/// classes): no celular fica como antes (2 colunas, ícone 100); em tela
+/// maior, mais colunas, ícone menor e cartão mais baixo que largo.
+class _Grade {
+  const _Grade(this.colunas, this.icone, this.proporcao);
+  final int colunas;
+  final double icone;
+  final double proporcao; // largura ÷ altura do cartão
+
+  static _Grade paraLargura(double largura) {
+    if (largura < 600) return const _Grade(2, 100, 1.0); // compacta: celular
+    if (largura < 840) return const _Grade(3, 72, 1.1); // média: tablet, janela pequena
+    return const _Grade(4, 64, 1.3); // expandida: web e desktop
+  }
+}
+
 class _DisciplinasState extends State<Disciplinas> {
   final _supabase = Supabase.instance.client;
   final user = Supabase.instance.client.auth.currentUser;
@@ -387,40 +403,44 @@ class _DisciplinasState extends State<Disciplinas> {
             return const Center(child: CircularProgressIndicator());
           }
           final areas = snapshot.data!;
-          return CustomScrollView(
-            primary: false,
-            slivers: <Widget>[
-              for (final area in areas) ...[
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                  sliver: SliverToBoxAdapter(
-                    child: Text(
-                      area.nome,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+          // Largura real da coluna do app (até 1000 px, ver main.dart).
+          return LayoutBuilder(builder: (context, limites) {
+            final grade = _Grade.paraLargura(limites.maxWidth);
+            return CustomScrollView(
+              primary: false,
+              slivers: <Widget>[
+                for (final area in areas) ...[
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                    sliver: SliverToBoxAdapter(
+                      child: Text(
+                        area.nome,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
                     ),
                   ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverGrid.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 10.0,
-                      crossAxisSpacing: 10.0,
-                      childAspectRatio: 1.0,
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverGrid.builder(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: grade.colunas,
+                        mainAxisSpacing: 10.0,
+                        crossAxisSpacing: 10.0,
+                        childAspectRatio: grade.proporcao,
+                      ),
+                      itemCount: area.disciplinas.length,
+                      itemBuilder: (context, index) =>
+                          _cartaoDisciplina(context, area.disciplinas[index], grade.icone),
                     ),
-                    itemCount: area.disciplinas.length,
-                    itemBuilder: (context, index) =>
-                        _cartaoDisciplina(context, area.disciplinas[index]),
                   ),
-                ),
+                ],
+                const SliverPadding(padding: EdgeInsets.only(bottom: 20)),
               ],
-              const SliverPadding(padding: EdgeInsets.only(bottom: 20)),
-            ],
-          );
+            );
+          });
         },
       ),
     );
@@ -428,11 +448,15 @@ class _DisciplinasState extends State<Disciplinas> {
 
   /// Card de uma disciplina: mesmo visual de antes (nome + ícone grande),
   /// com o selo "Minha disciplina" para o professor vinculado a ela.
-  Widget _cartaoDisciplina(BuildContext context, Map<String, dynamic> disciplina) {
+  /// No computador, o cartão sobe um pouco com o mouse em cima e o cursor
+  /// vira a mãozinha (`_RespostaAoMouse`); no toque, nada muda.
+  Widget _cartaoDisciplina(
+      BuildContext context, Map<String, dynamic> disciplina, double tamanhoIcone) {
     final cores = Theme.of(context).colorScheme;
     final minha = _minhasDisciplinas.contains(disciplina['id']);
 
-    return GestureDetector(
+    return _RespostaAoMouse(
+      child: GestureDetector(
       onTap: () {
         Navigator.push(
           context,
@@ -470,7 +494,7 @@ class _DisciplinasState extends State<Disciplinas> {
                   ),
                   Icon(
                     iconeDaDisciplina(disciplina),
-                    size: 100,
+                    size: tamanhoIcone,
                     color: cores.secondary.withValues(alpha: 0.6),
                   ),
                 ],
@@ -495,6 +519,7 @@ class _DisciplinasState extends State<Disciplinas> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -515,6 +540,38 @@ class _DisciplinasState extends State<Disciplinas> {
               child: const Text('Tentar de novo'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Resposta ao mouse (web e desktop): cursor de clique e o cartão sobe
+/// um pouco (1,5% da altura) e cresce 3% enquanto o mouse está em cima.
+class _RespostaAoMouse extends StatefulWidget {
+  const _RespostaAoMouse({required this.child});
+  final Widget child;
+
+  @override
+  State<_RespostaAoMouse> createState() => _RespostaAoMouseState();
+}
+
+class _RespostaAoMouseState extends State<_RespostaAoMouse> {
+  bool _emCima = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _emCima = true),
+      onExit: (_) => setState(() => _emCima = false),
+      child: AnimatedSlide(
+        offset: _emCima ? const Offset(0, -0.015) : Offset.zero,
+        duration: const Duration(milliseconds: 150),
+        child: AnimatedScale(
+          scale: _emCima ? 1.03 : 1.0,
+          duration: const Duration(milliseconds: 150),
+          child: widget.child,
         ),
       ),
     );
