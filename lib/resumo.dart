@@ -61,7 +61,10 @@ class _ResumoState extends State<Resumo> {
           .from('microconteudos')
           .select('id, titulo, codigo, status, objetivo, tempo_estimado_min, '
               'conteudo_central, exemplo, referencias, '
-              'topicos(codigo, titulo), questoes(count)')
+              // Só o id das questões, para contar: com a migration 10 o app lê
+              // `questoes` coluna a coluna, e o `questoes(count)` do PostgREST
+              // pede a tabela inteira (erro 42501, permission denied).
+              'topicos(codigo, titulo), questoes(id)')
           .eq('id', id)
           .maybeSingle();
 
@@ -78,7 +81,8 @@ class _ResumoState extends State<Resumo> {
         _erro = null;
         _carregando = false;
       });
-    } catch (e) {
+    } catch (erro, pilha) {
+      debugPrint('Erro ao carregar o microconteúdo: $erro\n$pilha');
       if (!mounted) return;
       setState(() {
         _erro = 'Não foi possível carregar o conteúdo. Verifique a conexão.';
@@ -209,9 +213,7 @@ class _ResumoState extends State<Resumo> {
     }
 
     final questoes = micro['questoes'];
-    final totalQuestoes = (questoes is List && questoes.isNotEmpty)
-        ? (questoes.first['count'] as int? ?? 0)
-        : 0;
+    final totalQuestoes = questoes is List ? questoes.length : 0;
 
     return Column(
       children: [

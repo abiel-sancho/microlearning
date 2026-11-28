@@ -105,7 +105,10 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
   Future<List<_Questao>> _carregarQuestoes() async {
     final dados = await Supabase.instance.client
         .from('questoes')
-        .select('id, enunciado, alternativas, correta, ordem')
+        // Sem `correta`: desde a migration 10 o app não lê essa coluna (erro
+        // 42501). Ela vem de gabaritos(): na prévia, logo abaixo; para o aluno,
+        // depois de gravar a resposta.
+        .select('id, enunciado, alternativas, ordem')
         .eq('microconteudo_id', widget.idMicroconteudo)
         .order('ordem');
     final questoes = [for (final linha in dados) _Questao(linha)];
@@ -220,6 +223,7 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
+            debugPrint('Erro ao carregar as questões: ${snapshot.error}');
             return _mensagem(
               'Não foi possível carregar as questões. Verifique a conexão.',
               acao: FilledButton(
