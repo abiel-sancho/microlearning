@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:testeapp/configuracoes.dart';
+import 'package:testeapp/cores_disciplina.dart';
 import 'package:testeapp/menu_lateral.dart';
 import 'package:testeapp/topicos.dart';
 import 'package:testeapp/tema.dart';
@@ -211,6 +212,14 @@ class _DisciplinasState extends State<Disciplinas> {
       BuildContext context, Map<String, dynamic> disciplina, double tamanhoIcone) {
     final cores = Theme.of(context).colorScheme;
     final minha = _minhasDisciplinas.contains(disciplina['id']);
+    // Cor da disciplina (etapa 35). Fundo e texto são um par calculado pelo
+    // Material 3 (primaryContainer / onPrimaryContainer), com contraste.
+    // Sigla desconhecida: as cores do app, como antes.
+    final esquema = esquemaDaDisciplina(disciplina['sigla']);
+    final fundo = esquema?.primaryContainer ?? cores.secondaryContainer;
+    final texto = esquema?.onPrimaryContainer ?? cores.onSecondaryContainer;
+    final icone = esquema?.onPrimaryContainer.withValues(alpha: 0.75) ??
+        cores.secondary.withValues(alpha: 0.6);
 
     return _RespostaAoMouse(
       child: GestureDetector(
@@ -220,6 +229,7 @@ class _DisciplinasState extends State<Disciplinas> {
           MaterialPageRoute(
             builder: (context) => Topicos(
               idDisciplina: disciplina['id'].toString(),
+              sigla: disciplina['sigla'] as String?,
             ),
           ),
         );
@@ -227,7 +237,7 @@ class _DisciplinasState extends State<Disciplinas> {
       child: Container(
         decoration: AppTema.cartao(
           context,
-          cor: cores.secondaryContainer,
+          cor: fundo,
         ),
         padding: const EdgeInsets.all(8),
         child: Stack(
@@ -245,14 +255,14 @@ class _DisciplinasState extends State<Disciplinas> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: cores.onSecondaryContainer,
+                            color: texto,
                           ),
                     ),
                   ),
                   Icon(
                     iconeDaDisciplina(disciplina),
                     size: tamanhoIcone,
-                    color: cores.secondary.withValues(alpha: 0.6),
+                    color: icone,
                   ),
                 ],
               ),
@@ -264,12 +274,13 @@ class _DisciplinasState extends State<Disciplinas> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: cores.primary,
+                    // Selo invertido (texto na cor do fundo): sempre legível.
+                    color: esquema?.onPrimaryContainer ?? cores.primary,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     'Minha disciplina',
-                    style: TextStyle(fontSize: 10, color: cores.onPrimary),
+                    style: TextStyle(fontSize: 10, color: esquema != null ? fundo : cores.onPrimary),
                   ),
                 ),
               ),

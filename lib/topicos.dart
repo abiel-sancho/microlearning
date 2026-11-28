@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:testeapp/cores_disciplina.dart';
 import 'package:testeapp/criar_conteudo.dart';
 import 'package:testeapp/menu_lateral.dart';
 import 'package:testeapp/resumo.dart';
@@ -16,9 +17,14 @@ import 'package:testeapp/tema.dart';
 ///   status (CLAUDE.md 5.4), pela função `microconteudos_da_disciplina`
 ///   (migration 8). O rascunho de colega aparece com cadeado e não abre.
 class Topicos extends StatefulWidget {
-  const Topicos({super.key, required this.idDisciplina});
+  const Topicos({super.key, required this.idDisciplina, this.sigla});
 
   final String idDisciplina;
+
+  /// Sigla da disciplina, para a cor da tela já ao abrir (etapa 35). Quem
+  /// não tiver a sigla (busca por código, atalhos) pode omitir: ela vem da
+  /// própria consulta.
+  final String? sigla;
 
   @override
   State<Topicos> createState() => _TopicosState();
@@ -48,10 +54,11 @@ class _Topico {
       microconteudos.where((m) => m['status'] == 'publicado').length;
 }
 
-/// Resultado da carga: nome da disciplina, unidades e se a pessoa vê tudo.
+/// Resultado da carga: nome e sigla da disciplina, unidades e se a pessoa vê tudo.
 class _Dados {
-  _Dados(this.nomeDisciplina, this.unidades, this.veTudo);
+  _Dados(this.nomeDisciplina, this.sigla, this.unidades, this.veTudo);
   final String nomeDisciplina;
+  final String? sigla;
   final List<_Unidade> unidades;
   final bool veTudo;
 }
@@ -70,7 +77,7 @@ class _TopicosState extends State<Topicos> {
     // Uma consulta traz unidades → tópicos → microconteúdos da disciplina.
     final linhas = await _supabase
         .from('unidades')
-        .select('numero, nome, disciplinas(nome), '
+        .select('numero, nome, disciplinas(nome, sigla), '
             'topicos(id, numero, codigo, titulo, '
             'microconteudos(id, titulo, codigo, status, ordem))')
         .eq('disciplina_id', idDisciplina);
@@ -98,9 +105,11 @@ class _TopicosState extends State<Topicos> {
     }
 
     var nomeDisciplina = '';
+    String? sigla;
     final unidades = <_Unidade>[];
     for (final u in linhas) {
       nomeDisciplina = (u['disciplinas']?['nome'] as String?) ?? nomeDisciplina;
+      sigla = (u['disciplinas']?['sigla'] as String?) ?? sigla;
 
       final topicos = <_Topico>[];
       for (final t in (u['topicos'] as List)) {
@@ -131,7 +140,7 @@ class _TopicosState extends State<Topicos> {
     }
     unidades.sort((a, b) => a.numero.compareTo(b.numero));
 
-    return _Dados(nomeDisciplina, unidades, veTudo);
+    return _Dados(nomeDisciplina, sigla, unidades, veTudo);
   }
 
   /// Admin vê tudo; professor vê tudo só nas disciplinas em que atua.
@@ -192,17 +201,25 @@ class _TopicosState extends State<Topicos> {
       future: _futuro,
       builder: (context, snapshot) {
         final dados = snapshot.data;
-        return Scaffold(
-          // Mesmo menu de Disciplinas (etapa 33): não precisa voltar para usá-lo.
-          endDrawer: const MenuLateral(),
-          appBar: AppBar(
-            leading: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back),
+        // Cores da disciplina em toda a tela, inclusive no menu e na folha de
+        // microconteúdos (etapa 35). O Builder dá um `context` abaixo do
+        // Theme: é por ele que os cartões e a folha pegam as cores novas.
+        return Theme(
+          data: temaDaDisciplina(Theme.of(context), widget.sigla ?? dados?.sigla),
+          child: Builder(
+            builder: (context) => Scaffold(
+              // Mesmo menu de Disciplinas (etapa 33): não precisa voltar para usá-lo.
+              endDrawer: const MenuLateral(),
+              appBar: AppBar(
+                leading: IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back),
+                ),
+                title: Text(dados?.nomeDisciplina ?? ''),
+              ),
+              body: _corpo(context, snapshot),
             ),
-            title: Text(dados?.nomeDisciplina ?? ''),
           ),
-          body: _corpo(context, snapshot),
         );
       },
     );
