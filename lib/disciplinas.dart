@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:testeapp/configuracoes.dart';
-import 'package:testeapp/criar_conteudo.dart';
-import 'package:testeapp/meus_resumos.dart';
-import 'package:testeapp/revisoes_pendentes.dart';
-import 'package:testeapp/sobre.dart';
+import 'package:testeapp/menu_lateral.dart';
 import 'package:testeapp/topicos.dart';
 import 'package:testeapp/tema.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/icones_disciplina.dart';
-
-import 'dart:typed_data';
-import 'package:image_picker/image_picker.dart';
 
 class Disciplinas extends StatefulWidget {
   const Disciplinas({super.key});
@@ -46,14 +40,8 @@ class _DisciplinasState extends State<Disciplinas> {
   final _supabase = Supabase.instance.client;
   final user = Supabase.instance.client.auth.currentUser;
 
-  Uint8List? _arquivoFoto; // prévia local (bytes) enquanto envia
-  String? _avatarUrl; // URL salva no Supabase
-  bool _enviando = false;
-  final ImagePicker _picker = ImagePicker();
-
-  // Dados de `perfis` e `professor_disciplinas`.
-  String? _nomePerfil;
-  String? _papel;
+  // Disciplinas do professor (`professor_disciplinas`), para o selo.
+  // Foto, nome e papel ficam no menu lateral (`menu_lateral.dart`, etapa 33).
   Set<int> _minhasDisciplinas = {};
 
   // Disciplinas agrupadas por área.
@@ -62,10 +50,6 @@ class _DisciplinasState extends State<Disciplinas> {
   @override
   void initState() {
     super.initState();
-    final url = user?.userMetadata?['avatar_url'];
-    if (url is String && url.isNotEmpty) {
-      _avatarUrl = url;
-    }
     _carregarPerfil();
   }
 
@@ -96,14 +80,14 @@ class _DisciplinasState extends State<Disciplinas> {
     return grupos.values.toList();
   }
 
-  /// Nome e papel vêm de `perfis`; para professor, também as disciplinas dele.
+  /// Papel em `perfis`; para professor, as disciplinas dele (selo).
   Future<void> _carregarPerfil() async {
     final usuario = user;
     if (usuario == null) return;
     try {
       final perfil = await _supabase
           .from('perfis')
-          .select('nome, papel')
+          .select('papel')
           .eq('id', usuario.id)
           .maybeSingle();
 
@@ -117,109 +101,15 @@ class _DisciplinasState extends State<Disciplinas> {
       }
 
       if (!mounted) return;
-      setState(() {
-        _nomePerfil = perfil?['nome'] as String?;
-        _papel = perfil?['papel'] as String?;
-        _minhasDisciplinas = minhas;
-      });
+      setState(() => _minhasDisciplinas = minhas);
     } catch (erro, pilha) {
-      // Sem o perfil, a tela continua: mostra o nome do cadastro e o papel "Aluno".
+      // Sem o perfil, a tela continua, só sem o selo "Minha disciplina".
       debugPrint('Erro ao carregar o perfil: $erro\n$pilha');
     }
   }
 
   void _tentarDeNovo() {
     setState(() => _futuroAreas = _carregarDisciplinas());
-  }
-
-  /// Nome do perfil; se não carregou, o nome enviado no cadastro.
-  String get _nome {
-    final doPerfil = _nomePerfil?.trim();
-    if (doPerfil != null && doPerfil.isNotEmpty) return doPerfil;
-    final username = user?.userMetadata?['username'];
-    return username is String ? username.trim() : '';
-  }
-
-  String get _rotuloPapel => switch (_papel) {
-        'professor' => 'Professor',
-        'admin' => 'Coordenação',
-        _ => 'Aluno',
-      };
-
-  /// Professor e coordenação veem as opções de conteúdo no menu.
-  bool get _podeCriarConteudo => _papel == 'professor' || _papel == 'admin';
-
-  // ---------------------------------------------------------------------------
-  // Foto de perfil (sem mudanças nesta etapa)
-  // ---------------------------------------------------------------------------
-
-  // Recebe o setState do Drawer para que ele seja redesenhado
-  Future<void> _pickImage(StateSetter setDrawerState) async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery, // Use ImageSource.camera para tirar foto na hora
-      imageQuality: 80,
-    );
-
-    if (pickedFile == null || user == null) return;
-
-    // Funciona na web e no celular (não depende de File/path)
-    final bytes = await pickedFile.readAsBytes();
-
-    // Mostra a foto na hora, antes do upload terminar
-    setDrawerState(() {
-      _arquivoFoto = bytes;
-      _enviando = true;
-    });
-
-    try {
-      final supabase = Supabase.instance.client;
-
-      // Descobre o tipo da imagem: primeiro pelo mimeType, depois pelo nome
-      var contentType = pickedFile.mimeType ?? '';
-      if (!contentType.startsWith('image/')) {
-        var ext = pickedFile.name.split('.').last.toLowerCase();
-        if (ext == 'jpg') ext = 'jpeg';
-        const permitidos = ['jpeg', 'png', 'webp', 'gif'];
-        contentType = 'image/${permitidos.contains(ext) ? ext : 'jpeg'}';
-      }
-
-      // Um arquivo por usuário, dentro de uma pasta com o id dele
-      final caminho = '${user!.id}/avatar';
-
-      await supabase.storage.from('avatars').uploadBinary(
-            caminho,
-            bytes,
-            fileOptions: FileOptions(
-              upsert: true, // sobrescreve a foto anterior
-              contentType: contentType,
-            ),
-          );
-
-      // O "?v=" evita que o Flutter mostre a imagem antiga em cache
-      final url = '${supabase.storage.from('avatars').getPublicUrl(caminho)}?v=${DateTime.now().millisecondsSinceEpoch}';
-
-      // Guarda a URL no perfil do usuário
-      await supabase.auth.updateUser(
-        UserAttributes(data: {'avatar_url': url}),
-      );
-
-      setDrawerState(() {
-        _avatarUrl = url;
-        _arquivoFoto = null; // agora usa a imagem da rede
-        _enviando = false;
-      });
-    } catch (e) {
-      debugPrint('Erro ao enviar foto: $e');
-      setDrawerState(() {
-        _arquivoFoto = null;
-        _enviando = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível enviar a foto.')),
-        );
-      }
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -229,139 +119,8 @@ class _DisciplinasState extends State<Disciplinas> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      endDrawer: Drawer(
-        child: StatefulBuilder(
-          builder: (context, setDrawerState) {
-            return ListView(
-              padding: EdgeInsets.zero,
-              children: <Widget>[
-                DrawerHeader(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => _pickImage(setDrawerState),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.grey[300],
-                              backgroundImage: _arquivoFoto != null ? MemoryImage(_arquivoFoto!) : (_avatarUrl != null ? NetworkImage(_avatarUrl!) : null) as ImageProvider?,
-                              child: (_arquivoFoto == null && _avatarUrl == null) ? const Icon(Icons.person, size: 40, color: Colors.grey,)
-                                  : null,
-                            ),
-                            if (_enviando)
-                              const SizedBox(
-                                width: 80,
-                                height: 80,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 3,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 25),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _nome.isEmpty ? '???' : _nome,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              _rotuloPapel,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Visibility(
-                  visible: _podeCriarConteudo,
-                  child: ListTile(
-                    leading: const Icon(Icons.message),
-                    title: const Text('Inserir microconteúdo'),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CriarConteudoScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Visibility(
-                  visible: _podeCriarConteudo,
-                  child: ListTile(
-                    leading: const Icon(Icons.account_circle),
-                    title: const Text('Meus conteudos'),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MeusResumos(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                // Revisão por pares: fila dos colegas da disciplina (admin: todos).
-                Visibility(
-                  visible: _podeCriarConteudo,
-                  child: ListTile(
-                    leading: const Icon(Icons.rate_review_outlined),
-                    title: const Text('Revisar conteúdos'),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RevisoesPendentes(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.school),
-                  title: const Text('Disciplinas'),
-                  // Já estamos em Disciplinas: só fecha o menu.
-                  onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: const Text('Sobre o app'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => Sobre()),
-                    );
-                  },
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+      // Menu lateral comum (etapa 33), com Sair.
+      endDrawer: const MenuLateral(naTelaDeDisciplinas: true),
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
@@ -369,6 +128,7 @@ class _DisciplinasState extends State<Disciplinas> {
           },
           icon: const Icon(Icons.arrow_back),
         ),
+        title: const Text('Disciplinas'),
       ),
       bottomNavigationBar: BottomNavigationBar(
         onTap: (index) async {
@@ -376,15 +136,10 @@ class _DisciplinasState extends State<Disciplinas> {
             // Home: volta para a tela Início (que está logo abaixo na pilha).
             Navigator.pop(context);
           } else if (index == 1) {
+            // A foto é relida pelo menu lateral cada vez que ele abre.
             await Navigator.of(context).push(
               MaterialPageRoute(builder: (context) => Configuracoes()),
             );
-            // Ao voltar, relê a foto salva no perfil do usuário.
-            final url = Supabase.instance.client.auth.currentUser?.userMetadata?['avatar_url'];
-            if (!mounted) return;
-            if (url is String && url.isNotEmpty) {
-              setState(() => _avatarUrl = url);
-            }
           }
           // index 2 (Favoritos): ainda sem ação. Pendente de decisão.
         },

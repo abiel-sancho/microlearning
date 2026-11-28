@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:testeapp/criar_conteudo.dart';
+import 'package:testeapp/menu_lateral.dart';
 import 'package:testeapp/resumo.dart';
 import 'package:testeapp/tema.dart';
 
@@ -192,6 +193,8 @@ class _TopicosState extends State<Topicos> {
       builder: (context, snapshot) {
         final dados = snapshot.data;
         return Scaffold(
+          // Mesmo menu de Disciplinas (etapa 33): não precisa voltar para usá-lo.
+          endDrawer: const MenuLateral(),
           appBar: AppBar(
             leading: IconButton(
               onPressed: () => Navigator.pop(context),
