@@ -79,8 +79,10 @@ class _DisciplinasState extends State<Disciplinas> {
     final linhas = await _supabase
         .from('disciplinas')
         .select('id, sigla, nome, area_id, areas(nome)')
-        .order('area_id')
-        .order('id');
+        // ascending: true é obrigatório: no supabase_flutter o padrão do
+        // .order() é decrescente (as áreas vinham de trás para frente).
+        .order('area_id', ascending: true)
+        .order('id', ascending: true);
 
     final grupos = <int, _GrupoArea>{};
     for (final disciplina in linhas) {

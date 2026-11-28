@@ -110,7 +110,9 @@ class _QuestoesAlunoState extends State<QuestoesAluno> {
         // depois de gravar a resposta.
         .select('id, enunciado, alternativas, ordem')
         .eq('microconteudo_id', widget.idMicroconteudo)
-        .order('ordem');
+        // ascending: true é obrigatório: no supabase_flutter o padrão do
+        // .order() é decrescente (as questões vinham da última para a primeira).
+        .order('ordem', ascending: true);
     final questoes = [for (final linha in dados) _Questao(linha)];
     // Na prévia (autor ou revisor), a função já libera todas as corretas.
     if (widget.previa && questoes.isNotEmpty) await _lerGabarito(questoes);

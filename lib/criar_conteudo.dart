@@ -191,7 +191,7 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
         consulta = consulta.inFilter('id', ids);
       }
       disciplinas = List<Map<String, dynamic>>.from(
-          await consulta.order('area_id').order('id'));
+          await consulta.order('area_id', ascending: true).order('id', ascending: true));
       // Ordena unidades e tópicos pelo número.
       for (final d in disciplinas) {
         final unidades = List<Map<String, dynamic>>.from(d['unidades'] as List)
@@ -210,7 +210,9 @@ class _CriarConteudoScreenState extends State<CriarConteudoScreen> {
       final linhas = await _supabase
           .from('modelo_campos')
           .select('campo, rotulo, instrucao, exemplo, obrigatorio, ordem')
-          .order('ordem');
+          // ascending: true é obrigatório: no supabase_flutter o padrão do
+          // .order() é DECRESCENTE (o formulário aparecia de trás para frente).
+          .order('ordem', ascending: true);
       if (linhas.isNotEmpty) {
         campos = [
           for (final l in linhas)
